@@ -1,5 +1,5 @@
 {
-  "version": "2026-09-03-v5",
+  "version": "2026-09-03-v6",
   "project": "Video_product_lowquality",
   "scope": "Review one e-commerce short video using video content evidence, product/merchant evidence, and comment/review evidence. Do not split labels by AI-generated versus non-AI-generated.",
   "decision_values": ["problematic", "manual_review", "clean"],
@@ -72,6 +72,7 @@
         "For process videos, compare input and output within the same segment, not unrelated montage segments.",
         "Do not dismiss object materialization as normal editing when frames are consecutive product-use steps and the change affects the claimed storage or organization function.",
         "Object materialization and drawer contents continuity errors are higher-priority than layer-count mismatch; layer-count mismatch from perspective, cropping, or counting uncertainty is lower-confidence and should not be the primary issue when object materialization is present.",
+        "Do not use smooth drawer opening/closing or normal hand motion to deny object materialization; check the same compartment state across adjacent frames, such as empty -> white box -> shoes or empty -> shoes without a visible placement action.",
         "If the physically impossible foldable/telescopic movement or hand interaction affects product understanding, use primary_issue_type=video_unrealistic_or_continuity_error as the main issue even when the product style matches the reference image."
       ],
       "required_evidence": ["specific video frame evidence"]
