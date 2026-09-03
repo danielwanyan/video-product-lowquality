@@ -1,0 +1,92 @@
+Video Product Lowquality Rules v1
+
+Project scope
+Review one e-commerce short video, one bound product evidence package, and user feedback evidence. Output one video-level decision and separate evidence details for video content risk, product or merchant risk, and comment or review risk.
+
+This project reviews all e-commerce videos uniformly. Do not create separate labels for AI-generated versus non-AI-generated videos. Synthetic, unrealistic, or impossible visuals are evidence types, not project labels.
+
+Evidence channels
+Video content evidence: video frames from frame_list, ASR, OCR, and video URL.
+Product and merchant evidence: product_id, seller_id_str, country, and product reference images from images.
+Comment and review evidence: comments, CCR tags, comment text, and product_review_summary.
+
+Final decisions
+problematic: strong evidence shows a real video, product, merchant, or feedback risk.
+manual_review: evidence is concerning but incomplete, visual evidence is missing while comments or reviews are risky, or fake/IPR/mismatch risk is plausible but not proven.
+clean: available video, product, merchant, comment, and review evidence do not show meaningful risk.
+
+Primary issue types
+video_product_mismatch
+video_exaggerated_promotion
+video_unrealistic_or_continuity_error
+race_conflict_or_fake_police
+staged_mass_production_or_pure_marketing
+ipr_or_counterfeit
+poor_product_quality
+product_side_mismatch_or_exaggeration
+none
+
+Rule V1: video_product_mismatch
+Hit when video frames show a physical product being promoted or demonstrated, and the shown product does not match the bound product reference images.
+Compare against all product reference images, not only the first image.
+If the shown product matches any product reference image, do not hit mismatch for that product.
+Use product image visual features such as type, shape, structure, material appearance, packaging, and core design.
+Do not use metadata alone to prove visual consistency.
+Ignore lighting, minor color shade, angle, render-versus-camera style, packaging language, brand OCR text, decorative props, and ordinary apparel wearing-style differences.
+If no physical product appears in video frames, do not hit video_product_mismatch from ASR/OCR alone.
+
+Rule V2: video_exaggerated_promotion
+Hit when video frames, ASR, or OCR present product function, effect, size, quality, capacity, speed, result, or use scenario in a way that materially overstates what the product can reasonably do.
+Examples include impossible before/after effects, unrealistic instant results, exaggerated capacity, toy or small product producing full-size effects, small device shown with professional-level power, and visual abundance far beyond the sold unit.
+Reserve strong hits for concrete evidence. Weak marketing praise alone is not enough.
+
+Rule V3: video_unrealistic_or_continuity_error
+Hit when video frames show physical impossibility, continuity error, product identity drift, structure drift, pattern drift, content identity drift, impossible scale or pose change, impossible emitted smoke/mist/fire/light, or a scene that would mislead consumers about the real product.
+For process videos, compare input and output within the same segment. Do not compare unrelated montage segments.
+For food and packaged goods, prioritize sold SKU contradictions such as form, wrapper, count, or visible quantity mismatch.
+Do not over-focus on noisy OCR, minor hand artifacts, or ordinary cooking/color changes when the product remains consistent.
+
+Rule V4: race_conflict_or_fake_police
+Hit when the video uses racial conflict, ethnic hostility, fake police, fake law-enforcement authority, staged enforcement, or other high-conflict social/political identity framing to promote or dramatize the product.
+General uniforms, public service imagery, or ordinary safety scenes are not enough unless the content implies false authority, intimidation, conflict, or discriminatory framing.
+
+Rule V5: staged_mass_production_or_pure_marketing
+Hit when ASR/OCR is mainly sales pressure, price, urgency, discount, buying guidance, or repetitive marketing, while providing no substantive product information.
+Substantive product information includes function, material, size, capacity, ingredients, usage, compatibility, use scenario, operation method, or realistic performance explanation.
+Do not hit this rule when the video has weak but real product information. Weak detail may support manual_review or other rules, but is not automatically pure marketing.
+
+Rule P1: ipr_or_counterfeit
+Hit or manual_review when product images, video frames, or feedback suggest fake, counterfeit, unauthorized brand/IP use, copied character/team/logo, or brand impersonation.
+Use visual brand/IP signals plus comment/review evidence. Do not rely on title or category alone.
+Strong fake/counterfeit evidence can be problematic. Weak or uncertain suspicion should be manual_review.
+
+Rule P2: poor_product_quality
+Hit when comment/review evidence or visuals show poor durability, poor material, broken item, dirty/leaking product, safety concern, bad workmanship, or repeated concrete quality complaints.
+Clustered comment/review evidence is high-weight because many product quality problems are not visible from product images or video frames.
+Single vague dissatisfaction is not enough by itself.
+
+Rule P3: product_side_mismatch_or_exaggeration
+Hit or manual_review when comments, reviews, product images, or video evidence indicate received product does not match the video/product promise, the effect does not work, size/material differs, or promotion is materially misleading.
+Use comment/review clusters such as not as described, wrong item, poor effect, perceived scam, refund/return problem, or mismatch complaints.
+
+Comment and review weighting
+CCR tags are structured evidence. Use them with comment text and product_review_summary.
+ProductIssue--ProductQuality maps to poor_product_quality.
+ProductIssue--ProductUserPerceptionProblem maps to not_as_described, sizing, or perception risk.
+MisleadingPromotionIssue maps to product_side_mismatch_or_exaggeration.
+ContentIssue or Monitoring tags about ArtificialIntelligenceGeneratedContent map to ai_or_unrealistic_video signal.
+ProductIssue--PriceComplain maps to price_or_value_complaint and should not by itself become poor quality.
+PlatformIssue maps to platform issue only and should not by itself become product risk.
+
+Data availability
+If frame_list is empty, do not make video-frame visual claims.
+If images is empty or invalid, do not make product-image comparison claims.
+If ASR and OCR are empty, do not hit pure marketing from missing text.
+If comments are empty or only placeholders, do not claim clustered user feedback.
+If key visual evidence is missing but comments/reviews are high risk, prefer manual_review.
+
+Output requirements
+Return raw JSON only in the project schema.
+Use Chinese summary and reasons for human review.
+Every hit or uncertain result must include concrete evidence.
+Explain whether comment/review evidence changed the final decision.

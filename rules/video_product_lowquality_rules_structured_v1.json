@@ -1,0 +1,162 @@
+{
+  "version": "2026-09-03-v1",
+  "project": "Video_product_lowquality",
+  "scope": "Review one e-commerce short video using video content evidence, product/merchant evidence, and comment/review evidence. Do not split labels by AI-generated versus non-AI-generated.",
+  "decision_values": ["problematic", "manual_review", "clean"],
+  "primary_issue_types": [
+    "video_product_mismatch",
+    "video_exaggerated_promotion",
+    "video_unrealistic_or_continuity_error",
+    "race_conflict_or_fake_police",
+    "staged_mass_production_or_pure_marketing",
+    "ipr_or_counterfeit",
+    "poor_product_quality",
+    "product_side_mismatch_or_exaggeration",
+    "none"
+  ],
+  "evidence_channels": {
+    "video_content": ["frame_list", "ASR", "OCR", "url"],
+    "product_merchant": ["product_id", "images", "seller_id_str", "country"],
+    "comment_review": ["comments", "product_review_summary"]
+  },
+  "rules": [
+    {
+      "id": "V1",
+      "issue_type": "video_product_mismatch",
+      "name": "Video product mismatch",
+      "triggers": [
+        "Video frames show a physical product being promoted or demonstrated.",
+        "The shown product does not match any provided product reference image.",
+        "Mismatch concerns product type, structure, shape, material appearance, packaging, content, or core design."
+      ],
+      "false_positive_boundaries": [
+        "A match with any product reference image counts as visual consistency.",
+        "Do not use metadata alone to prove visual consistency.",
+        "Ignore lighting, minor color shade, angle, render-versus-camera style, packaging language, brand OCR text, props, and ordinary apparel wearing-style differences.",
+        "If no physical product appears in video frames, do not hit mismatch from ASR/OCR alone."
+      ],
+      "required_evidence": ["video frame evidence", "product reference image evidence"]
+    },
+    {
+      "id": "V2",
+      "issue_type": "video_exaggerated_promotion",
+      "name": "Exaggerated product promotion",
+      "triggers": [
+        "Function, effect, size, quality, capacity, speed, result, or use scenario is materially overstated.",
+        "Video or ASR/OCR creates an unrealistic product expectation.",
+        "Visual abundance, performance, or before/after result exceeds what the sold product can reasonably support."
+      ],
+      "false_positive_boundaries": [
+        "Weak marketing praise alone is not enough.",
+        "Ordinary editing or positive tone is not enough without concrete misleading product implication."
+      ],
+      "required_evidence": ["video frame evidence or ASR/OCR claim", "connection to product expectation"]
+    },
+    {
+      "id": "V3",
+      "issue_type": "video_unrealistic_or_continuity_error",
+      "name": "Unrealistic scene or continuity error",
+      "triggers": [
+        "Physical impossibility, continuity error, product identity drift, structure drift, pattern drift, content identity drift, impossible scale or pose change.",
+        "Impossible emitted smoke, mist, fire, light, or other visual effect.",
+        "Process input and output do not belong to the same segment or product identity."
+      ],
+      "false_positive_boundaries": [
+        "Do not over-focus on noisy OCR, minor hand artifacts, or ordinary cooking/color changes.",
+        "For process videos, compare input and output within the same segment, not unrelated montage segments."
+      ],
+      "required_evidence": ["specific video frame evidence"]
+    },
+    {
+      "id": "V4",
+      "issue_type": "race_conflict_or_fake_police",
+      "name": "Race conflict or fake police",
+      "triggers": [
+        "Racial conflict, ethnic hostility, fake police, fake law-enforcement authority, staged enforcement, or high-conflict social/political identity framing is used for promotion or dramatization."
+      ],
+      "false_positive_boundaries": [
+        "General uniforms, public service imagery, or ordinary safety scenes are not enough without false authority, intimidation, conflict, or discriminatory framing."
+      ],
+      "required_evidence": ["video frame evidence or ASR/OCR evidence"]
+    },
+    {
+      "id": "V5",
+      "issue_type": "staged_mass_production_or_pure_marketing",
+      "name": "Staged mass production or pure marketing pitch",
+      "triggers": [
+        "ASR/OCR is mainly sales pressure, price, urgency, discount, buying guidance, or repetitive marketing.",
+        "The video lacks substantive product information such as function, material, size, capacity, ingredients, usage, compatibility, scenario, operation method, or realistic performance explanation."
+      ],
+      "false_positive_boundaries": [
+        "Weak but real product information prevents direct pure-marketing hit.",
+        "Missing ASR/OCR cannot support pure-marketing hit."
+      ],
+      "required_evidence": ["ASR/OCR evidence"]
+    },
+    {
+      "id": "P1",
+      "issue_type": "ipr_or_counterfeit",
+      "name": "IPR or counterfeit risk",
+      "triggers": [
+        "Visual brand/IP signal suggests fake, counterfeit, unauthorized brand/IP use, copied character/team/logo, or brand impersonation.",
+        "Comments or reviews repeatedly mention fake, counterfeit, not genuine, replica, or similar concerns."
+      ],
+      "false_positive_boundaries": [
+        "Do not rely on title or category alone.",
+        "Weak or uncertain suspicion should be manual_review rather than direct problematic."
+      ],
+      "required_evidence": ["visual brand/IP evidence or clustered comment/review evidence"]
+    },
+    {
+      "id": "P2",
+      "issue_type": "poor_product_quality",
+      "name": "Poor product quality",
+      "triggers": [
+        "Comment/review evidence or visuals show poor durability, poor material, broken item, dirty/leaking product, safety concern, bad workmanship, or repeated concrete quality complaints."
+      ],
+      "false_positive_boundaries": [
+        "Single vague dissatisfaction is not enough by itself.",
+        "Price-only complaint is not quality evidence by itself."
+      ],
+      "required_evidence": ["clustered comment/review evidence or concrete visual quality evidence"]
+    },
+    {
+      "id": "P3",
+      "issue_type": "product_side_mismatch_or_exaggeration",
+      "name": "Product-side mismatch or exaggeration",
+      "triggers": [
+        "Received product does not match the video/product promise.",
+        "The advertised effect does not work.",
+        "Size, material, quantity, packaging, or function differs from user expectation created by the video or product evidence.",
+        "Comments/reviews indicate not as described, wrong item, poor effect, perceived scam, or refund/return problem."
+      ],
+      "false_positive_boundaries": [
+        "General preference complaints are not enough unless repeated and tied to core product promise."
+      ],
+      "required_evidence": ["comment/review evidence, video evidence, or product image evidence"]
+    }
+  ],
+  "comment_tag_mapping": {
+    "ProductIssue--ProductQuality--*": "poor_product_quality",
+    "ProductIssue--ProductUserPerceptionProblem--*": "product_side_mismatch_or_exaggeration",
+    "MisleadingPromotionIssue--*": "product_side_mismatch_or_exaggeration",
+    "ContentIssue--TopicalComplaints--ArtificialIntelligenceGeneratedContent": "video_unrealistic_or_continuity_error",
+    "Monitoring--SensitiveTopicDiscussion--ArtificialIntelligenceGeneratedContent": "video_unrealistic_or_continuity_error",
+    "ProductIssue--PriceComplain--*": "price_or_value_complaint",
+    "FulfillmentandLogisticsIssue--*": "seller_or_fulfillment_problem",
+    "PlatformIssue--*": "platform_issue_only"
+  },
+  "data_availability_rules": [
+    "If frame_list is empty, do not make video-frame visual claims.",
+    "If images is empty or invalid, do not make product-image comparison claims.",
+    "If ASR and OCR are empty, do not hit pure marketing from missing text.",
+    "If comments are empty or only placeholders, do not claim clustered user feedback.",
+    "If key visual evidence is missing but comments/reviews are high risk, prefer manual_review."
+  ],
+  "output_rules": [
+    "Return raw JSON only in the project schema.",
+    "Use Chinese summary and reasons for human review.",
+    "Every hit or uncertain result must include concrete evidence.",
+    "Explain whether comment/review evidence changed the final decision."
+  ]
+}
