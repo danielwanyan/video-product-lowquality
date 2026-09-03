@@ -1,4 +1,4 @@
-Video Product Lowquality Rules v1
+Video Product Lowquality Rules v3
 
 Project scope
 Review one e-commerce short video, one bound product evidence package, and user feedback evidence. Output one video-level decision and separate evidence details for video content risk, product or merchant risk, and comment or review risk.
@@ -29,8 +29,12 @@ none
 Rule V1: video_product_mismatch
 Hit when video frames show a physical product being promoted or demonstrated, and the shown product does not match the bound product reference images.
 Compare against all product reference images, not only the first image.
-If the shown product matches any product reference image, do not hit mismatch for that product.
-Use product image visual features such as type, shape, structure, material appearance, packaging, and core design.
+If the shown product matches any product reference image in same style/type and there is no material contradiction in size, dimensions, capacity, count, or scale, do not hit mismatch for that product.
+Use product image visual features such as type, shape, structure, material appearance, packaging, size labels, dimensions, visible scale, and core design.
+Same product style or same product type is not enough to clear mismatch when the video materially changes the promised size, dimensions, capacity, count, or scale.
+Hit video_product_mismatch when product reference images or visible product-page text say one dimension or size variant, but video frames make the promoted item appear to be a materially larger or smaller variant.
+Example: product reference image says the cat house is 40 x 40 x 34 cm / 34 cm high, while the video frame presents the cat house as a much taller large cylinder relative to the adult presenter or pet; this is size/scale货不对板 even if the color, shape, opening, scratching panel, and hanging ball match.
+When this kind of visible size/scale contradiction is clear, output problematic with primary_issue_type=video_product_mismatch.
 Do not use metadata alone to prove visual consistency.
 Ignore lighting, minor color shade, angle, render-versus-camera style, packaging language, brand OCR text, decorative props, and ordinary apparel wearing-style differences.
 If no physical product appears in video frames, do not hit video_product_mismatch from ASR/OCR alone.
@@ -38,11 +42,16 @@ If no physical product appears in video frames, do not hit video_product_mismatc
 Rule V2: video_exaggerated_promotion
 Hit when video frames, ASR, or OCR present product function, effect, size, quality, capacity, speed, result, or use scenario in a way that materially overstates what the product can reasonably do.
 Examples include impossible before/after effects, unrealistic instant results, exaggerated capacity, toy or small product producing full-size effects, small device shown with professional-level power, and visual abundance far beyond the sold unit.
+When the video demonstrates unusually strong capability, fit, sealing, durability, stretch, or broad compatibility, and product_review_summary or clustered comments say the real product is too small, too thin, tears easily, does not fit, or is misleading compared to promotional videos, the primary issue should be primary_issue_type=video_exaggerated_promotion. Keep poor_product_quality and product_side_mismatch_or_exaggeration as secondary product-side hits when supported.
+Example: a stretch food cover video shows strong sealing and broad fit over watermelon, trays, bowls, and containers, while reviews say the covers are too small/thin, tear easily, and do not match promotional videos. This is content-side exaggerated promotion as the main issue, plus product quality / product-side mismatch as supporting product issues.
 Reserve strong hits for concrete evidence. Weak marketing praise alone is not enough.
 
 Rule V3: video_unrealistic_or_continuity_error
 Hit when video frames show physical impossibility, continuity error, product identity drift, structure drift, pattern drift, content identity drift, impossible scale or pose change, impossible emitted smoke/mist/fire/light, or a scene that would mislead consumers about the real product.
 For process videos, compare input and output within the same segment. Do not compare unrelated montage segments.
+For foldable, telescopic, adjustable, or assembled household products, check whether hinges, support bars, crossbars, feet, panels, and side frames can physically move between adjacent frames as shown. If the frame expands, collapses, or changes geometry in a way the reference product cannot support, the main issue should be primary_issue_type=video_unrealistic_or_continuity_error.
+Check hand interaction and object contact. If a hand appears to hold multiple objects with an impossible grip, floats through the product, changes contact points inconsistently, or the product responds without plausible force/support, treat it as a continuity or physical-reality error when it affects product understanding.
+Example: a foldable microwave shelf reference image shows a 45 cm high frame with fixed side supports, hooks, panels, and telescopic width, but video frames show the side frame and support bars stretching or changing geometry unrealistically around a large oven, or a hand carrying several spice jars with an impossible grip. This is content-side 穿帮/不符现实 even if the product style matches the reference image.
 For food and packaged goods, prioritize sold SKU contradictions such as form, wrapper, count, or visible quantity mismatch.
 Do not over-focus on noisy OCR, minor hand artifacts, or ordinary cooking/color changes when the product remains consistent.
 

@@ -1,5 +1,5 @@
 {
-  "version": "2026-09-03-v1",
+  "version": "2026-09-03-v3",
   "project": "Video_product_lowquality",
   "scope": "Review one e-commerce short video using video content evidence, product/merchant evidence, and comment/review evidence. Do not split labels by AI-generated versus non-AI-generated.",
   "decision_values": ["problematic", "manual_review", "clean"],
@@ -27,15 +27,16 @@
       "triggers": [
         "Video frames show a physical product being promoted or demonstrated.",
         "The shown product does not match any provided product reference image.",
-        "Mismatch concerns product type, structure, shape, material appearance, packaging, content, or core design."
+        "Mismatch concerns product type, structure, shape, material appearance, packaging, content, size label, dimensions, visible scale, capacity, count, or core design.",
+        "The product reference image or visible product-page text says one size/dimension variant, but video frames present a materially larger or smaller variant."
       ],
       "false_positive_boundaries": [
-        "A match with any product reference image counts as visual consistency.",
+        "A same product style/type match with any product reference image counts as visual consistency only for style/type claims; it does not clear a material size, dimension, capacity, count, or scale contradiction.",
         "Do not use metadata alone to prove visual consistency.",
         "Ignore lighting, minor color shade, angle, render-versus-camera style, packaging language, brand OCR text, props, and ordinary apparel wearing-style differences.",
         "If no physical product appears in video frames, do not hit mismatch from ASR/OCR alone."
       ],
-      "required_evidence": ["video frame evidence", "product reference image evidence"]
+      "required_evidence": ["video frame evidence", "product reference image evidence", "visible size or scale contradiction when size mismatch is the claim"]
     },
     {
       "id": "V2",
@@ -44,11 +45,13 @@
       "triggers": [
         "Function, effect, size, quality, capacity, speed, result, or use scenario is materially overstated.",
         "Video or ASR/OCR creates an unrealistic product expectation.",
-        "Visual abundance, performance, or before/after result exceeds what the sold product can reasonably support."
+        "Visual abundance, performance, or before/after result exceeds what the sold product can reasonably support.",
+        "Video demonstrates unusually strong capability, fit, sealing, durability, stretch, or broad compatibility, while product_review_summary or clustered comments report the real product is too small, too thin, tears easily, does not fit, or is misleading compared to promotional videos."
       ],
       "false_positive_boundaries": [
         "Weak marketing praise alone is not enough.",
-        "Ordinary editing or positive tone is not enough without concrete misleading product implication."
+        "Ordinary editing or positive tone is not enough without concrete misleading product implication.",
+        "If the conflict is between the advertised video use-case and real customer experience, use primary_issue_type=video_exaggerated_promotion as the main issue; keep poor_product_quality and product_side_mismatch_or_exaggeration as secondary product-side hits when supported."
       ],
       "required_evidence": ["video frame evidence or ASR/OCR claim", "connection to product expectation"]
     },
@@ -59,11 +62,14 @@
       "triggers": [
         "Physical impossibility, continuity error, product identity drift, structure drift, pattern drift, content identity drift, impossible scale or pose change.",
         "Impossible emitted smoke, mist, fire, light, or other visual effect.",
-        "Process input and output do not belong to the same segment or product identity."
+        "Process input and output do not belong to the same segment or product identity.",
+        "For foldable, telescopic, adjustable, or assembled household products, hinges, support bars, crossbars, feet, panels, and side frames expand, collapse, or change geometry in a way the reference product cannot physically support.",
+        "Hand interaction or object contact is physically inconsistent, such as an impossible grip, floating contact, changing contact points, or product movement without plausible force/support."
       ],
       "false_positive_boundaries": [
         "Do not over-focus on noisy OCR, minor hand artifacts, or ordinary cooking/color changes.",
-        "For process videos, compare input and output within the same segment, not unrelated montage segments."
+        "For process videos, compare input and output within the same segment, not unrelated montage segments.",
+        "If the physically impossible foldable/telescopic movement or hand interaction affects product understanding, use primary_issue_type=video_unrealistic_or_continuity_error as the main issue even when the product style matches the reference image."
       ],
       "required_evidence": ["specific video frame evidence"]
     },
