@@ -1,4 +1,4 @@
-Video Product Lowquality Rules v3
+Video Product Lowquality Rules v4
 
 Project scope
 Review one e-commerce short video, one bound product evidence package, and user feedback evidence. Output one video-level decision and separate evidence details for video content risk, product or merchant risk, and comment or review risk.
@@ -51,7 +51,10 @@ Hit when video frames show physical impossibility, continuity error, product ide
 For process videos, compare input and output within the same segment. Do not compare unrelated montage segments.
 For foldable, telescopic, adjustable, or assembled household products, check whether hinges, support bars, crossbars, feet, panels, and side frames can physically move between adjacent frames as shown. If the frame expands, collapses, or changes geometry in a way the reference product cannot support, the main issue should be primary_issue_type=video_unrealistic_or_continuity_error.
 Check hand interaction and object contact. If a hand appears to hold multiple objects with an impossible grip, floats through the product, changes contact points inconsistently, or the product responds without plausible force/support, treat it as a continuity or physical-reality error when it affects product understanding.
+For transparent storage boxes, shoe cabinets, organizers, drawers, or containers, check object materialization and drawer contents across adjacent frames. If a box appears suddenly, shoes appear inside a drawer without a visible placement action, drawer contents change between 1-second frames, or a temporary white box flashes and is then replaced by shoes, the main issue should be primary_issue_type=video_unrealistic_or_continuity_error.
+Do not dismiss object materialization as normal editing when the frames are consecutive product-use steps and the change affects the claimed storage or organization function.
 Example: a foldable microwave shelf reference image shows a 45 cm high frame with fixed side supports, hooks, panels, and telescopic width, but video frames show the side frame and support bars stretching or changing geometry unrealistically around a large oven, or a hand carrying several spice jars with an impossible grip. This is content-side 穿帮/不符现实 even if the product style matches the reference image.
+Example: a transparent shoe storage video shows an empty or partly empty compartment, then one second later a white box flashes into the compartment, and the next frame shoes appear inside without a plausible hand placement. This is object materialization / drawer contents continuity error.
 For food and packaged goods, prioritize sold SKU contradictions such as form, wrapper, count, or visible quantity mismatch.
 Do not over-focus on noisy OCR, minor hand artifacts, or ordinary cooking/color changes when the product remains consistent.
 
