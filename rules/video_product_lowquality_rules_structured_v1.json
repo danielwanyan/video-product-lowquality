@@ -1,8 +1,12 @@
 {
-  "version": "2026-09-03-v6",
+  "version": "2026-09-08-v7-human-review-labels",
   "project": "Video_product_lowquality",
   "scope": "Review one e-commerce short video using video content evidence, product/merchant evidence, and comment/review evidence. Do not split labels by AI-generated versus non-AI-generated.",
-  "decision_values": ["problematic", "manual_review", "clean"],
+  "decision_values": [
+    "problematic",
+    "manual_review",
+    "clean"
+  ],
   "primary_issue_types": [
     "video_product_mismatch",
     "video_exaggerated_promotion",
@@ -15,9 +19,22 @@
     "none"
   ],
   "evidence_channels": {
-    "video_content": ["frame_list", "ASR", "OCR", "url"],
-    "product_merchant": ["product_id", "images", "seller_id_str", "country"],
-    "comment_review": ["comments", "product_review_summary"]
+    "video_content": [
+      "frame_list",
+      "ASR",
+      "OCR",
+      "url"
+    ],
+    "product_merchant": [
+      "product_id",
+      "images",
+      "seller_id_str",
+      "country"
+    ],
+    "comment_review": [
+      "comments",
+      "product_review_summary"
+    ]
   },
   "rules": [
     {
@@ -36,7 +53,11 @@
         "Ignore lighting, minor color shade, angle, render-versus-camera style, packaging language, brand OCR text, props, and ordinary apparel wearing-style differences.",
         "If no physical product appears in video frames, do not hit mismatch from ASR/OCR alone."
       ],
-      "required_evidence": ["video frame evidence", "product reference image evidence", "visible size or scale contradiction when size mismatch is the claim"]
+      "required_evidence": [
+        "video frame evidence",
+        "product reference image evidence",
+        "visible size or scale contradiction when size mismatch is the claim"
+      ]
     },
     {
       "id": "V2",
@@ -53,7 +74,10 @@
         "Ordinary editing or positive tone is not enough without concrete misleading product implication.",
         "If the conflict is between the advertised video use-case and real customer experience, use primary_issue_type=video_exaggerated_promotion as the main issue; keep poor_product_quality and product_side_mismatch_or_exaggeration as secondary product-side hits when supported."
       ],
-      "required_evidence": ["video frame evidence or ASR/OCR claim", "connection to product expectation"]
+      "required_evidence": [
+        "video frame evidence or ASR/OCR claim",
+        "connection to product expectation"
+      ]
     },
     {
       "id": "V3",
@@ -75,7 +99,9 @@
         "Do not use smooth drawer opening/closing or normal hand motion to deny object materialization; check the same compartment state across adjacent frames, such as empty -> white box -> shoes or empty -> shoes without a visible placement action.",
         "If the physically impossible foldable/telescopic movement or hand interaction affects product understanding, use primary_issue_type=video_unrealistic_or_continuity_error as the main issue even when the product style matches the reference image."
       ],
-      "required_evidence": ["specific video frame evidence"]
+      "required_evidence": [
+        "specific video frame evidence"
+      ]
     },
     {
       "id": "V4",
@@ -87,7 +113,9 @@
       "false_positive_boundaries": [
         "General uniforms, public service imagery, or ordinary safety scenes are not enough without false authority, intimidation, conflict, or discriminatory framing."
       ],
-      "required_evidence": ["video frame evidence or ASR/OCR evidence"]
+      "required_evidence": [
+        "video frame evidence or ASR/OCR evidence"
+      ]
     },
     {
       "id": "V5",
@@ -95,13 +123,17 @@
       "name": "Staged mass production or pure marketing pitch",
       "triggers": [
         "ASR/OCR is mainly sales pressure, price, urgency, discount, buying guidance, or repetitive marketing.",
-        "The video lacks substantive product information such as function, material, size, capacity, ingredients, usage, compatibility, scenario, operation method, or realistic performance explanation."
+        "The video lacks substantive product information such as function, material, size, capacity, ingredients, usage, compatibility, scenario, operation method, or realistic performance explanation.",
+        "About 90% or more of ASR/OCR is sales pressure, price, stock, discount, urgency, or buying guidance."
       ],
       "false_positive_boundaries": [
         "Weak but real product information prevents direct pure-marketing hit.",
-        "Missing ASR/OCR cannot support pure-marketing hit."
+        "Missing ASR/OCR cannot support pure-marketing hit.",
+        "Do not hit this rule when the video gives substantive product information, even if the video also contains price or purchase guidance."
       ],
-      "required_evidence": ["ASR/OCR evidence"]
+      "required_evidence": [
+        "ASR/OCR evidence"
+      ]
     },
     {
       "id": "P1",
@@ -115,20 +147,30 @@
         "Do not rely on title or category alone.",
         "Weak or uncertain suspicion should be manual_review rather than direct problematic."
       ],
-      "required_evidence": ["visual brand/IP evidence or clustered comment/review evidence"]
+      "required_evidence": [
+        "visual brand/IP evidence or clustered comment/review evidence"
+      ]
     },
     {
       "id": "P2",
       "issue_type": "poor_product_quality",
       "name": "Poor product quality",
       "triggers": [
-        "Comment/review evidence or visuals show poor durability, poor material, broken item, dirty/leaking product, safety concern, bad workmanship, or repeated concrete quality complaints."
+        "Comment/review evidence or visuals show poor durability, poor material, broken item, dirty/leaking product, safety concern, bad workmanship, or repeated concrete quality complaints.",
+        "product_review_summary reports repeated concrete product defects, side effects, durability problems, material problems, broken/leaking/safety issues, unpleasant smell, no noticeable benefit, persistent symptoms, diarrhea, or does not help."
       ],
       "false_positive_boundaries": [
         "Single vague dissatisfaction is not enough by itself.",
-        "Price-only complaint is not quality evidence by itself."
+        "Price-only complaint is not quality evidence by itself.",
+        "product_review_summary is the primary product-side evidence for this rule.",
+        "Do not mark product-side hit from video comments that mainly say not like the video, AI, fake ad, over-edited, or misleading video; these comments support video-side exaggerated promotion unless they also describe received-product defects.",
+        "Do not mark product-side hit when product_review_summary is clearly positive or neutral and the only negative evidence is video-comment dissatisfaction about the promotional video.",
+        "Single vague dissatisfaction, price-only complaint, or product-page marketing copy is not enough by itself."
       ],
-      "required_evidence": ["clustered comment/review evidence or concrete visual quality evidence"]
+      "required_evidence": [
+        "product_review_summary evidence or concrete received-product defect comments",
+        "not merely promotional-video complaint comments"
+      ]
     },
     {
       "id": "P3",
@@ -138,18 +180,27 @@
         "Received product does not match the video/product promise.",
         "The advertised effect does not work.",
         "Size, material, quantity, packaging, or function differs from user expectation created by the video or product evidence.",
-        "Comments/reviews indicate not as described, wrong item, poor effect, perceived scam, or refund/return problem."
+        "Comments/reviews indicate not as described, wrong item, poor effect, perceived scam, or refund/return problem.",
+        "product_review_summary or concrete received-product comments indicate the received product, actual effect, material, size, quantity, or function differs from the product/video promise."
       ],
       "false_positive_boundaries": [
-        "General preference complaints are not enough unless repeated and tied to core product promise."
+        "General preference complaints are not enough unless repeated and tied to core product promise.",
+        "product_review_summary is the primary product-side evidence for this rule.",
+        "Do not mark product-side hit from product image advertising claims alone, such as before/after panels, percentage claims, cooling-temperature claims, sterilization claims, or other product-page marketing text.",
+        "If product-page marketing claims make the video misleading, treat them as video-side exaggerated promotion unless product_review_summary or received-product comments confirm real product-side failure.",
+        "Do not mark product-side hit from comments that only say not like the video, does not work like the video, AI video, fake video, or over-edited video; these are primarily video-side exaggerated promotion signals.",
+        "Do not mark product-side hit when product_review_summary says the product is effective, well received, or has no significant weakness, unless there is independent strong evidence of counterfeit/IPR, safety, received wrong item, severe defect, or repeated concrete received-product failure."
       ],
-      "required_evidence": ["comment/review evidence, video evidence, or product image evidence"]
+      "required_evidence": [
+        "product_review_summary evidence or concrete received-product mismatch comments",
+        "not merely video exaggeration evidence"
+      ]
     }
   ],
   "comment_tag_mapping": {
     "ProductIssue--ProductQuality--*": "poor_product_quality",
     "ProductIssue--ProductUserPerceptionProblem--*": "product_side_mismatch_or_exaggeration",
-    "MisleadingPromotionIssue--*": "product_side_mismatch_or_exaggeration",
+    "MisleadingPromotionIssue--*": "video_exaggerated_promotion unless product_review_summary or concrete received-product comments support product_side_mismatch_or_exaggeration",
     "ContentIssue--TopicalComplaints--ArtificialIntelligenceGeneratedContent": "video_unrealistic_or_continuity_error",
     "Monitoring--SensitiveTopicDiscussion--ArtificialIntelligenceGeneratedContent": "video_unrealistic_or_continuity_error",
     "ProductIssue--PriceComplain--*": "price_or_value_complaint",
@@ -161,12 +212,47 @@
     "If images is empty or invalid, do not make product-image comparison claims.",
     "If ASR and OCR are empty, do not hit pure marketing from missing text.",
     "If comments are empty or only placeholders, do not claim clustered user feedback.",
-    "If key visual evidence is missing but comments/reviews are high risk, prefer manual_review."
+    "If key visual evidence is missing but comments/reviews are high risk, prefer manual_review.",
+    "If frame_list is empty or no usable video frame is available, output tagsAttribute containing 视频不可见 and do not output tagsContent based on visual evidence."
   ],
   "output_rules": [
     "Return raw JSON only in the project schema.",
     "Use Chinese summary and reasons for human review.",
     "Every hit or uncertain result must include concrete evidence.",
-    "Explain whether comment/review evidence changed the final decision."
-  ]
+    "Explain whether comment/review evidence changed the final decision.",
+    "Return human_review_labels with exact Chinese tagsContent, tagsProduct, and tagsAttribute values."
+  ],
+  "human_review_labels": {
+    "ratings": [
+      "video",
+      "product"
+    ],
+    "tagsContent": [
+      "货不对板",
+      "夸大宣传",
+      "穿帮/不符现实",
+      "种族对立/假警察",
+      "摆拍量产/营销叫卖",
+      "其他问题"
+    ],
+    "tagsProduct": [
+      "IPR侵权/假货",
+      "商品质量差",
+      "货不对板/夸大宣传",
+      "售后服务问题",
+      "物流问题"
+    ],
+    "tagsAttribute": [
+      "图文AIGC",
+      "无问题AIGC",
+      "非AIGC",
+      "视频不可见"
+    ],
+    "mapping_rules": [
+      "Set ratings to include video when tagsContent is non-empty.",
+      "Set ratings to include product when tagsProduct is non-empty.",
+      "If frame_list is empty or no usable video frame is available, include 视频不可见 in tagsAttribute and do not infer visual video issues from missing frames.",
+      "Use exact Chinese label strings only."
+    ]
+  }
 }
