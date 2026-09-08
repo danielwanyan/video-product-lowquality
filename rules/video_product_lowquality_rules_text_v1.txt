@@ -74,6 +74,10 @@ Rule V4: race_conflict_or_fake_police
 Hit when the video uses racial conflict, ethnic hostility, fake police, fake law-enforcement authority, staged enforcement, or other high-conflict social/political identity framing to promote or dramatize the product.
 General uniforms, public service imagery, or ordinary safety scenes are not enough unless the content implies false authority, intimidation, conflict, or discriminatory framing.
 
+Rule V4B: other_content_issue
+Use tagsContent 其他问题 for sexualized hook, sexual implication, vulgar dating reward, or adult innuendo that is used as the video hook or promotion frame.
+Example: ASR says the winner can spend the night with me, get a night with a woman, or similar sexualized reward language. This should add tagsContent 其他问题 even when the main issue is also 夸大宣传 or 穿帮/不符现实.
+
 Rule V5: staged_mass_production_or_pure_marketing
 Hit when ASR/OCR is mainly sales pressure, price, urgency, discount, buying guidance, or repetitive marketing, while providing no substantive product information.
 Use this tag only when about 90% or more of ASR/OCR is sales pressure, price, stock, discount, urgency, or buying guidance.
@@ -82,6 +86,9 @@ Do not hit this rule when the video has weak but real product information. Weak 
 
 Rule P1: ipr_or_counterfeit
 Hit or manual_review when product images, video frames, or feedback suggest fake, counterfeit, unauthorized brand/IP use, copied character/team/logo, or brand impersonation.
+IPR/counterfeit should focus on major international brand, famous character/team/logo, luxury brand, or clearly protected IP. Small or unknown brand mismatch, random shop brand, generic lookalike, or weak design similarity is not enough.
+Do not mark IPR for small or unknown brand name differences such as ordinary fan brand mismatch unless a major international brand or famous IP is clearly involved.
+Do not mark IPR only because a product vaguely resembles a well-known design; require clear logo/brand/character/team signal or strong trade-dress similarity to a major international brand.
 Use visual brand/IP signals plus comment/review evidence. Do not rely on title or category alone.
 Strong fake/counterfeit evidence can be problematic. Weak or uncertain suspicion should be manual_review.
 
@@ -91,6 +98,7 @@ product_review_summary is the primary product-side evidence for this rule.
 Product quality evaluation is fully decoupled from video comments.
 Only product_review_summary can create or upgrade poor_product_quality.
 Ignore video comments for poor_product_quality, even when the comments contain ProductIssue CCR tags, unless the same defect is also supported by product_review_summary.
+For product-side hit, product_review_summary should be overall negative, or say half or more users report the same concrete product issue. If overall sentiment is positive and only a minority reports mixed efficacy, side effects, smell, or no noticeable benefit, do not mark product-side hit.
 Clustered product_review_summary evidence is high-weight because many product quality problems are not visible from product images or video frames.
 Do not mark product-side hit from video comments that mainly say not like the video, AI, fake ad, over-edited, or misleading video. Those comments support video-side exaggerated promotion unless they also describe received-product defects.
 Do not mark product-side hit when product_review_summary is clearly positive or neutral and the only negative evidence is video-comment dissatisfaction about the promotional video.
@@ -103,6 +111,7 @@ product_review_summary is the primary product-side evidence for this rule.
 Product-side evaluation is fully decoupled from video comments.
 Only product_review_summary can create or upgrade tagsProduct for 货不对板/夸大宣传, except for direct visual IPR/counterfeit evidence.
 Use product_review_summary clusters such as not as described, wrong item, poor effect, perceived scam, refund/return problem, or mismatch complaints.
+For product-side hit, product_review_summary should be overall negative, or say half or more users report the same concrete mismatch, poor effect, or failure. If overall sentiment is positive and only a minority reports mixed efficacy, do not mark product-side hit.
 Do not mark product-side hit from product image advertising claims alone, such as before/after panels, percentage claims, cooling-temperature claims, sterilization claims, or other product-page marketing text. If those claims make the video misleading, treat them as video-side exaggerated promotion unless product_review_summary or received-product comments confirm real product-side failure.
 Do not mark product-side hit from comments that only say not like the video, does not work like the video, AI video, fake video, or over-edited video. These are primarily video-side exaggerated promotion signals.
 Do not mark product-side hit when product_review_summary says the product is effective, well received, or has no significant weakness, unless there is independent strong evidence of counterfeit/IPR, safety, received wrong item, severe defect, or repeated concrete received-product failure.

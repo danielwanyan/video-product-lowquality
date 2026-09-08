@@ -1,5 +1,5 @@
 {
-  "version": "2026-09-08-v8-product-comment-decoupling",
+  "version": "2026-09-08-v9-ipr-threshold-sexualized-hook",
   "project": "Video_product_lowquality",
   "scope": "Review one e-commerce short video using video content evidence, product/merchant evidence, and comment/review evidence. Do not split labels by AI-generated versus non-AI-generated.",
   "decision_values": [
@@ -118,6 +118,22 @@
       ]
     },
     {
+      "id": "V4B",
+      "issue_type": "other_content_issue",
+      "name": "Other content issue / sexualized hook",
+      "triggers": [
+        "Sexualized hook, sexual implication, vulgar dating reward, or adult innuendo is used as the video hook or promotional framing.",
+        "ASR or OCR says the winner can spend the night with me, get a night with a woman, or similar sexualized reward language."
+      ],
+      "false_positive_boundaries": [
+        "Do not use this for ordinary product attractiveness claims without sexualized or adult implication.",
+        "This is a tagsContent=其他问题 signal, not a product-side issue."
+      ],
+      "required_evidence": [
+        "ASR/OCR/video-frame evidence of sexualized hook or adult innuendo"
+      ]
+    },
+    {
       "id": "V5",
       "issue_type": "staged_mass_production_or_pure_marketing",
       "name": "Staged mass production or pure marketing pitch",
@@ -141,11 +157,16 @@
       "name": "IPR or counterfeit risk",
       "triggers": [
         "Visual brand/IP signal suggests fake, counterfeit, unauthorized brand/IP use, copied character/team/logo, or brand impersonation.",
-        "Comments or reviews repeatedly mention fake, counterfeit, not genuine, replica, or similar concerns."
+        "Comments or reviews repeatedly mention fake, counterfeit, not genuine, replica, or similar concerns.",
+        "Clear major international brand, famous character/team/logo, luxury brand, or protected IP signal is visible or repeatedly reported."
       ],
       "false_positive_boundaries": [
         "Do not rely on title or category alone.",
-        "Weak or uncertain suspicion should be manual_review rather than direct problematic."
+        "Weak or uncertain suspicion should be manual_review rather than direct problematic.",
+        "IPR/counterfeit should focus on major international brand, famous character/team/logo, luxury brand, or clearly protected IP.",
+        "Small or unknown brand mismatch, random shop brand, generic lookalike, or weak design similarity is not enough.",
+        "Do not mark IPR only because a product vaguely resembles a well-known design; require clear logo/brand/character/team signal or strong trade-dress similarity to a major international brand.",
+        "Do not mark IPR for small or unknown brand name differences."
       ],
       "required_evidence": [
         "visual brand/IP evidence or clustered comment/review evidence"
@@ -168,7 +189,9 @@
         "Single vague dissatisfaction, price-only complaint, or product-page marketing copy is not enough by itself.",
         "Product quality evaluation is fully decoupled from video comments.",
         "Only product_review_summary can create or upgrade poor_product_quality.",
-        "Ignore video comments for poor_product_quality, even when the comments contain ProductIssue CCR tags, unless the same defect is also supported by product_review_summary."
+        "Ignore video comments for poor_product_quality, even when the comments contain ProductIssue CCR tags, unless the same defect is also supported by product_review_summary.",
+        "For product-side hit, product_review_summary should be overall negative, or say half or more users report the same concrete issue.",
+        "If overall sentiment is positive and only a minority reports mixed efficacy, side effects, smell, or no noticeable benefit, do not mark product-side hit."
       ],
       "required_evidence": [
         "product_review_summary evidence for product quality problems",
@@ -195,7 +218,9 @@
         "Do not mark product-side hit when product_review_summary says the product is effective, well received, or has no significant weakness, unless there is independent strong evidence of counterfeit/IPR, safety, received wrong item, severe defect, or repeated concrete received-product failure.",
         "Product-side evaluation is fully decoupled from video comments.",
         "Only product_review_summary can create or upgrade tagsProduct for 货不对板/夸大宣传, except for direct visual IPR/counterfeit evidence.",
-        "Do not use video comments alone for product_side_mismatch_or_exaggeration."
+        "Do not use video comments alone for product_side_mismatch_or_exaggeration.",
+        "For product-side hit, product_review_summary should be overall negative, or say half or more users report the same concrete issue.",
+        "If overall sentiment is positive and only a minority reports mixed efficacy, side effects, smell, or no noticeable benefit, do not mark product-side hit."
       ],
       "required_evidence": [
         "product_review_summary evidence for received-product mismatch or actual effect failure",
@@ -229,7 +254,10 @@
     "Return human_review_labels with exact Chinese tagsContent, tagsProduct, and tagsAttribute values.",
     "human_review_labels is multi-select; select all applicable labels, not only primary_issue_type.",
     "All conclusions, summaries, reasons, and evidence fields must be in Chinese. Only direct source quotes may remain in source language or English.",
-    "Output video_content_summary_cn and product_merchant_summary_cn in Chinese."
+    "Output video_content_summary_cn and product_merchant_summary_cn in Chinese.",
+    "Sexualized hook or adult innuendo maps to tagsContent 其他问题.",
+    "IPR/counterfeit should focus on major international brand or famous IP; small or unknown brand mismatch is not enough.",
+    "Product-side hit requires product_review_summary to be overall negative or say half or more users report the same concrete issue."
   ],
   "human_review_labels": {
     "ratings": [
@@ -263,7 +291,8 @@
       "Set ratings to include product when tagsProduct is non-empty.",
       "If frame_list is empty or no usable video frame is available, include 视频不可见 in tagsAttribute and do not infer visual video issues from missing frames.",
       "All conclusions, summaries, reasons, and evidence fields must be in Chinese. Only direct source quotes may remain in source language or English.",
-      "Use exact Chinese label strings only."
+      "Use exact Chinese label strings only.",
+      "Sexualized hook or spend the night with me style adult innuendo maps to tagsContent 其他问题."
     ]
   }
 }
