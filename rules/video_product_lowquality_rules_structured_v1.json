@@ -1,5 +1,5 @@
 {
-  "version": "2026-09-08-v7-human-review-labels",
+  "version": "2026-09-08-v8-product-comment-decoupling",
   "project": "Video_product_lowquality",
   "scope": "Review one e-commerce short video using video content evidence, product/merchant evidence, and comment/review evidence. Do not split labels by AI-generated versus non-AI-generated.",
   "decision_values": [
@@ -165,11 +165,14 @@
         "product_review_summary is the primary product-side evidence for this rule.",
         "Do not mark product-side hit from video comments that mainly say not like the video, AI, fake ad, over-edited, or misleading video; these comments support video-side exaggerated promotion unless they also describe received-product defects.",
         "Do not mark product-side hit when product_review_summary is clearly positive or neutral and the only negative evidence is video-comment dissatisfaction about the promotional video.",
-        "Single vague dissatisfaction, price-only complaint, or product-page marketing copy is not enough by itself."
+        "Single vague dissatisfaction, price-only complaint, or product-page marketing copy is not enough by itself.",
+        "Product quality evaluation is fully decoupled from video comments.",
+        "Only product_review_summary can create or upgrade poor_product_quality.",
+        "Ignore video comments for poor_product_quality, even when the comments contain ProductIssue CCR tags, unless the same defect is also supported by product_review_summary."
       ],
       "required_evidence": [
-        "product_review_summary evidence or concrete received-product defect comments",
-        "not merely promotional-video complaint comments"
+        "product_review_summary evidence for product quality problems",
+        "not video comments alone"
       ]
     },
     {
@@ -189,18 +192,21 @@
         "Do not mark product-side hit from product image advertising claims alone, such as before/after panels, percentage claims, cooling-temperature claims, sterilization claims, or other product-page marketing text.",
         "If product-page marketing claims make the video misleading, treat them as video-side exaggerated promotion unless product_review_summary or received-product comments confirm real product-side failure.",
         "Do not mark product-side hit from comments that only say not like the video, does not work like the video, AI video, fake video, or over-edited video; these are primarily video-side exaggerated promotion signals.",
-        "Do not mark product-side hit when product_review_summary says the product is effective, well received, or has no significant weakness, unless there is independent strong evidence of counterfeit/IPR, safety, received wrong item, severe defect, or repeated concrete received-product failure."
+        "Do not mark product-side hit when product_review_summary says the product is effective, well received, or has no significant weakness, unless there is independent strong evidence of counterfeit/IPR, safety, received wrong item, severe defect, or repeated concrete received-product failure.",
+        "Product-side evaluation is fully decoupled from video comments.",
+        "Only product_review_summary can create or upgrade tagsProduct for 货不对板/夸大宣传, except for direct visual IPR/counterfeit evidence.",
+        "Do not use video comments alone for product_side_mismatch_or_exaggeration."
       ],
       "required_evidence": [
-        "product_review_summary evidence or concrete received-product mismatch comments",
-        "not merely video exaggeration evidence"
+        "product_review_summary evidence for received-product mismatch or actual effect failure",
+        "not video comments alone"
       ]
     }
   ],
   "comment_tag_mapping": {
-    "ProductIssue--ProductQuality--*": "poor_product_quality",
-    "ProductIssue--ProductUserPerceptionProblem--*": "product_side_mismatch_or_exaggeration",
-    "MisleadingPromotionIssue--*": "video_exaggerated_promotion unless product_review_summary or concrete received-product comments support product_side_mismatch_or_exaggeration",
+    "ProductIssue--ProductQuality--*": "video comments do not by themselves map to poor_product_quality; require product_review_summary support",
+    "ProductIssue--ProductUserPerceptionProblem--*": "video comments do not by themselves map to product_side_mismatch_or_exaggeration; require product_review_summary support",
+    "MisleadingPromotionIssue--*": "video_exaggerated_promotion by default; product-side hit requires product_review_summary support",
     "ContentIssue--TopicalComplaints--ArtificialIntelligenceGeneratedContent": "video_unrealistic_or_continuity_error",
     "Monitoring--SensitiveTopicDiscussion--ArtificialIntelligenceGeneratedContent": "video_unrealistic_or_continuity_error",
     "ProductIssue--PriceComplain--*": "price_or_value_complaint",
@@ -220,7 +226,10 @@
     "Use Chinese summary and reasons for human review.",
     "Every hit or uncertain result must include concrete evidence.",
     "Explain whether comment/review evidence changed the final decision.",
-    "Return human_review_labels with exact Chinese tagsContent, tagsProduct, and tagsAttribute values."
+    "Return human_review_labels with exact Chinese tagsContent, tagsProduct, and tagsAttribute values.",
+    "human_review_labels is multi-select; select all applicable labels, not only primary_issue_type.",
+    "All conclusions, summaries, reasons, and evidence fields must be in Chinese. Only direct source quotes may remain in source language or English.",
+    "Output video_content_summary_cn and product_merchant_summary_cn in Chinese."
   ],
   "human_review_labels": {
     "ratings": [
@@ -249,9 +258,11 @@
       "视频不可见"
     ],
     "mapping_rules": [
+      "human_review_labels is multi-select. select all applicable tags, not only primary_issue_type.",
       "Set ratings to include video when tagsContent is non-empty.",
       "Set ratings to include product when tagsProduct is non-empty.",
       "If frame_list is empty or no usable video frame is available, include 视频不可见 in tagsAttribute and do not infer visual video issues from missing frames.",
+      "All conclusions, summaries, reasons, and evidence fields must be in Chinese. Only direct source quotes may remain in source language or English.",
       "Use exact Chinese label strings only."
     ]
   }

@@ -7,11 +7,13 @@ This project reviews all e-commerce videos uniformly. Do not create separate lab
 
 Human review label alignment
 The final JSON must include human_review_labels with ratings, tagsContent, tagsProduct, and tagsAttribute.
+human_review_labels is multi-select. select all applicable tags, not only primary_issue_type.
 Allowed tagsContent values: 货不对板, 夸大宣传, 穿帮/不符现实, 种族对立/假警察, 摆拍量产/营销叫卖, 其他问题.
 Allowed tagsProduct values: IPR侵权/假货, 商品质量差, 货不对板/夸大宣传, 售后服务问题, 物流问题.
 Allowed tagsAttribute values: 图文AIGC, 无问题AIGC, 非AIGC, 视频不可见.
 If frame_list is empty or no usable video frame is available, include 视频不可见 in tagsAttribute. Do not infer visual video issues from missing frames.
 Set ratings to include video when tagsContent is non-empty, product when tagsProduct is non-empty, and leave ratings empty when no issue tag is selected.
+All conclusions, summaries, reasons, and evidence fields must be in Chinese. Only direct source quotes may remain in source language or English.
 
 Evidence channels
 Video content evidence: video frames from frame_list, ASR, OCR, and video URL.
@@ -86,7 +88,10 @@ Strong fake/counterfeit evidence can be problematic. Weak or uncertain suspicion
 Rule P2: poor_product_quality
 Hit when comment/review evidence or visuals show poor durability, poor material, broken item, dirty/leaking product, safety concern, bad workmanship, or repeated concrete quality complaints.
 product_review_summary is the primary product-side evidence for this rule.
-Clustered comment/review evidence is high-weight because many product quality problems are not visible from product images or video frames.
+Product quality evaluation is fully decoupled from video comments.
+Only product_review_summary can create or upgrade poor_product_quality.
+Ignore video comments for poor_product_quality, even when the comments contain ProductIssue CCR tags, unless the same defect is also supported by product_review_summary.
+Clustered product_review_summary evidence is high-weight because many product quality problems are not visible from product images or video frames.
 Do not mark product-side hit from video comments that mainly say not like the video, AI, fake ad, over-edited, or misleading video. Those comments support video-side exaggerated promotion unless they also describe received-product defects.
 Do not mark product-side hit when product_review_summary is clearly positive or neutral and the only negative evidence is video-comment dissatisfaction about the promotional video.
 For supplements, cosmetics, food, and similar efficacy products, product_review_summary mentioning side effects, diarrhea, unpleasant smell, no noticeable benefit, persistent symptoms, or does not help can support poor_product_quality or product_side_mismatch_or_exaggeration.
@@ -95,16 +100,18 @@ Single vague dissatisfaction is not enough by itself.
 Rule P3: product_side_mismatch_or_exaggeration
 Hit or manual_review when comments, reviews, product images, or video evidence indicate received product does not match the video/product promise, the effect does not work, size/material differs, or promotion is materially misleading.
 product_review_summary is the primary product-side evidence for this rule.
-Use comment/review clusters such as not as described, wrong item, poor effect, perceived scam, refund/return problem, or mismatch complaints.
+Product-side evaluation is fully decoupled from video comments.
+Only product_review_summary can create or upgrade tagsProduct for 货不对板/夸大宣传, except for direct visual IPR/counterfeit evidence.
+Use product_review_summary clusters such as not as described, wrong item, poor effect, perceived scam, refund/return problem, or mismatch complaints.
 Do not mark product-side hit from product image advertising claims alone, such as before/after panels, percentage claims, cooling-temperature claims, sterilization claims, or other product-page marketing text. If those claims make the video misleading, treat them as video-side exaggerated promotion unless product_review_summary or received-product comments confirm real product-side failure.
 Do not mark product-side hit from comments that only say not like the video, does not work like the video, AI video, fake video, or over-edited video. These are primarily video-side exaggerated promotion signals.
 Do not mark product-side hit when product_review_summary says the product is effective, well received, or has no significant weakness, unless there is independent strong evidence of counterfeit/IPR, safety, received wrong item, severe defect, or repeated concrete received-product failure.
 
 Comment and review weighting
 CCR tags are structured evidence. Use them with comment text and product_review_summary.
-ProductIssue--ProductQuality maps to poor_product_quality.
-ProductIssue--ProductUserPerceptionProblem maps to not_as_described, sizing, or perception risk.
-MisleadingPromotionIssue maps to product_side_mismatch_or_exaggeration.
+ProductIssue--ProductQuality in video comments does not by itself map to poor_product_quality.
+ProductIssue--ProductUserPerceptionProblem in video comments does not by itself map to product_side_mismatch_or_exaggeration.
+MisleadingPromotionIssue maps to video_exaggerated_promotion by default.
 However, MisleadingPromotionIssue comments about the video not matching reality should first support video-side exaggerated promotion. They should not become product-side hits unless product_review_summary or concrete received-product comments support the same product-side failure.
 ContentIssue or Monitoring tags about ArtificialIntelligenceGeneratedContent map to ai_or_unrealistic_video signal.
 ProductIssue--PriceComplain maps to price_or_value_complaint and should not by itself become poor quality.
@@ -120,6 +127,7 @@ If key visual evidence is missing but comments/reviews are high risk, prefer man
 Output requirements
 Return raw JSON only in the project schema.
 Use Chinese summary and reasons for human review.
+Output video_content_summary_cn and product_merchant_summary_cn in Chinese.
 Output human_review_labels using the exact Chinese labels listed above.
 Every hit or uncertain result must include concrete evidence.
 Explain whether comment/review evidence changed the final decision.
