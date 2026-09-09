@@ -1,7 +1,12 @@
 {
-  "version": "2026-09-08-v9-ipr-threshold-sexualized-hook",
+  "version": "2026-09-09-v10-uniform-8-frame-sampling",
   "project": "Video_product_lowquality",
   "scope": "Review one e-commerce short video using video content evidence, product/merchant evidence, and comment/review evidence. Do not split labels by AI-generated versus non-AI-generated.",
+  "frame_sampling_contract": {
+    "frame_list_semantics": "frame_list contains up to 8 video frames uniformly sampled across the full video duration in chronological order.",
+    "adjacent_frame_semantics": "Adjacent video frames mean neighboring sampled frames in frame_list, not frames one second apart.",
+    "timestamp_boundary": "Do not claim exact elapsed time between frames unless explicit timestamps are provided."
+  },
   "decision_values": [
     "problematic",
     "manual_review",
@@ -89,14 +94,16 @@
         "Process input and output do not belong to the same segment or product identity.",
         "For foldable, telescopic, adjustable, or assembled household products, hinges, support bars, crossbars, feet, panels, and side frames expand, collapse, or change geometry in a way the reference product cannot physically support.",
         "Hand interaction or object contact is physically inconsistent, such as an impossible grip, floating contact, changing contact points, or product movement without plausible force/support.",
-        "For transparent storage boxes, shoe cabinets, organizers, drawers, or containers, object materialization occurs: a box appears suddenly, shoes appear inside a drawer without a visible placement action, drawer contents change between adjacent frames, or a temporary object flashes and is replaced by another item."
+        "For transparent storage boxes, shoe cabinets, organizers, drawers, or containers, object materialization occurs: a box appears suddenly, shoes appear inside a drawer without a visible placement action, drawer contents change between adjacent sampled frames, or a temporary object flashes and is replaced by another item."
       ],
       "false_positive_boundaries": [
+        "frame_list contains up to 8 video frames uniformly sampled across the full video duration in chronological order; adjacent frames are neighboring sampled frames, not frames one second apart.",
+        "Do not claim exact elapsed time between frames unless explicit timestamps are provided.",
         "Do not over-focus on noisy OCR, minor hand artifacts, or ordinary cooking/color changes.",
         "For process videos, compare input and output within the same segment, not unrelated montage segments.",
         "Do not dismiss object materialization as normal editing when frames are consecutive product-use steps and the change affects the claimed storage or organization function.",
         "Object materialization and drawer contents continuity errors are higher-priority than layer-count mismatch; layer-count mismatch from perspective, cropping, or counting uncertainty is lower-confidence and should not be the primary issue when object materialization is present.",
-        "Do not use smooth drawer opening/closing or normal hand motion to deny object materialization; check the same compartment state across adjacent frames, such as empty -> white box -> shoes or empty -> shoes without a visible placement action.",
+        "Do not use smooth drawer opening/closing or normal hand motion to deny object materialization; check the same compartment state across adjacent sampled frames, such as empty -> white box -> shoes or empty -> shoes without a visible placement action.",
         "If the physically impossible foldable/telescopic movement or hand interaction affects product understanding, use primary_issue_type=video_unrealistic_or_continuity_error as the main issue even when the product style matches the reference image."
       ],
       "required_evidence": [
