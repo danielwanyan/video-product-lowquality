@@ -1,5 +1,5 @@
 {
-  "version": "2026-09-09-v10-uniform-8-frame-sampling",
+  "version": "2026-09-15-v11-human-review-calibration",
   "project": "Video_product_lowquality",
   "scope": "Review one e-commerce short video using video content evidence, product/merchant evidence, and comment/review evidence. Do not split labels by AI-generated versus non-AI-generated.",
   "frame_sampling_contract": {
@@ -17,6 +17,7 @@
     "video_exaggerated_promotion",
     "video_unrealistic_or_continuity_error",
     "race_conflict_or_fake_police",
+    "other_content_issue",
     "staged_mass_production_or_pure_marketing",
     "ipr_or_counterfeit",
     "poor_product_quality",
@@ -56,7 +57,8 @@
         "A same product style/type match with any product reference image counts as visual consistency only for style/type claims; it does not clear a material size, dimension, capacity, count, or scale contradiction.",
         "Do not use metadata alone to prove visual consistency.",
         "Ignore lighting, minor color shade, angle, render-versus-camera style, packaging language, brand OCR text, props, and ordinary apparel wearing-style differences.",
-        "If no physical product appears in video frames, do not hit mismatch from ASR/OCR alone."
+        "If no physical product appears in video frames, do not hit mismatch from ASR/OCR alone.",
+        "If the video's main body is off-topic or IP-bait content that is not a product demonstration, map it to other_content_issue / tagsContent 其他问题; do not map it to 货不对板 unless the video actually demonstrates a different physical product as the sold item."
       ],
       "required_evidence": [
         "video frame evidence",
@@ -94,7 +96,8 @@
         "Process input and output do not belong to the same segment or product identity.",
         "For foldable, telescopic, adjustable, or assembled household products, hinges, support bars, crossbars, feet, panels, and side frames expand, collapse, or change geometry in a way the reference product cannot physically support.",
         "Hand interaction or object contact is physically inconsistent, such as an impossible grip, floating contact, changing contact points, or product movement without plausible force/support.",
-        "For transparent storage boxes, shoe cabinets, organizers, drawers, or containers, object materialization occurs: a box appears suddenly, shoes appear inside a drawer without a visible placement action, drawer contents change between adjacent sampled frames, or a temporary object flashes and is replaced by another item."
+        "For transparent storage boxes, shoe cabinets, organizers, drawers, or containers, object materialization occurs: a box appears suddenly, shoes appear inside a drawer without a visible placement action, drawer contents change between adjacent sampled frames, or a temporary object flashes and is replaced by another item.",
+        "For cleaning, spray, steam, vacuum, wiping, or stain-removal videos, obvious impossible output such as dirt being crushed or emitted instead of removed, the tool floating or standing unsupported, cleaning parts disappearing, or an undersized device producing physically implausible sustained steam/water/suction should be treated as a continuity or physical-reality error."
       ],
       "false_positive_boundaries": [
         "frame_list contains up to 8 video frames uniformly sampled across the full video duration in chronological order; adjacent frames are neighboring sampled frames, not frames one second apart.",
@@ -104,7 +107,8 @@
         "Do not dismiss object materialization as normal editing when frames are consecutive product-use steps and the change affects the claimed storage or organization function.",
         "Object materialization and drawer contents continuity errors are higher-priority than layer-count mismatch; layer-count mismatch from perspective, cropping, or counting uncertainty is lower-confidence and should not be the primary issue when object materialization is present.",
         "Do not use smooth drawer opening/closing or normal hand motion to deny object materialization; check the same compartment state across adjacent sampled frames, such as empty -> white box -> shoes or empty -> shoes without a visible placement action.",
-        "If the physically impossible foldable/telescopic movement or hand interaction affects product understanding, use primary_issue_type=video_unrealistic_or_continuity_error as the main issue even when the product style matches the reference image."
+        "If the physically impossible foldable/telescopic movement or hand interaction affects product understanding, use primary_issue_type=video_unrealistic_or_continuity_error as the main issue even when the product style matches the reference image.",
+        "An AI-generated watermark, synthetic style, or CGI-looking frame is not enough by itself. Require a concrete unrealistic claim, impossible visual mechanism, impossible object motion, product continuity break, or misleading demonstration."
       ],
       "required_evidence": [
         "specific video frame evidence"
@@ -127,17 +131,21 @@
     {
       "id": "V4B",
       "issue_type": "other_content_issue",
-      "name": "Other content issue / sexualized hook",
+      "name": "Other content issue / sexualized hook / off-topic or IP-bait",
       "triggers": [
         "Sexualized hook, sexual implication, vulgar dating reward, or adult innuendo is used as the video hook or promotional framing.",
-        "ASR or OCR says the winner can spend the night with me, get a night with a woman, or similar sexualized reward language."
+        "ASR or OCR says the winner can spend the night with me, get a night with a woman, or similar sexualized reward language.",
+        "The video main body is off-topic or IP-bait material such as movie-like scenes, celebrity or character/IP scenes, animals, landscape, political/social events, road construction, unrelated sports or entertainment clips, while the bound product is only attached at the end or not substantively demonstrated.",
+        "The video is only a static product image slideshow or near-static image display with no substantive product demonstration, when the review task treats that as low-quality content."
       ],
       "false_positive_boundaries": [
         "Do not use this for ordinary product attractiveness claims without sexualized or adult implication.",
-        "This is a tagsContent=其他问题 signal, not a product-side issue."
+        "This is a tagsContent=其他问题 signal, not a product-side issue.",
+        "Off-topic or IP-bait content maps to tagsContent 其他问题; do not map it to 货不对板 unless the video actually demonstrates another physical product as the sold item.",
+        "If the video clearly demonstrates a different physical product as the sold item, video_product_mismatch may still apply."
       ],
       "required_evidence": [
-        "ASR/OCR/video-frame evidence of sexualized hook or adult innuendo"
+        "ASR/OCR/video-frame evidence of sexualized hook, adult innuendo, off-topic or IP-bait content, or pure static-image display"
       ]
     },
     {
@@ -198,7 +206,8 @@
         "Only product_review_summary can create or upgrade poor_product_quality.",
         "Ignore video comments for poor_product_quality, even when the comments contain ProductIssue CCR tags, unless the same defect is also supported by product_review_summary.",
         "For product-side hit, product_review_summary should be overall negative, or say half or more users report the same concrete issue.",
-        "If overall sentiment is positive and only a minority reports mixed efficacy, side effects, smell, or no noticeable benefit, do not mark product-side hit."
+        "If overall sentiment is positive and only a minority reports mixed efficacy, side effects, smell, or no noticeable benefit, do not mark product-side hit.",
+        "If product_review_summary is positive-dominant with only some, several, a few, or minor complaints, output no product-side hit. Keep the issue on the video side unless the summary says negative feedback is dominant, many users report the same concrete defect, significant complaints dominate, or no positive product feedback is present."
       ],
       "required_evidence": [
         "product_review_summary evidence for product quality problems",
@@ -227,7 +236,8 @@
         "Only product_review_summary can create or upgrade tagsProduct for 货不对板/夸大宣传, except for direct visual IPR/counterfeit evidence.",
         "Do not use video comments alone for product_side_mismatch_or_exaggeration.",
         "For product-side hit, product_review_summary should be overall negative, or say half or more users report the same concrete issue.",
-        "If overall sentiment is positive and only a minority reports mixed efficacy, side effects, smell, or no noticeable benefit, do not mark product-side hit."
+        "If overall sentiment is positive and only a minority reports mixed efficacy, side effects, smell, or no noticeable benefit, do not mark product-side hit.",
+        "If product_review_summary is positive-dominant with only some, several, a few, or minor complaints, output no product-side hit. Do not turn minor product limitations into tagsProduct when human review would keep the case as content-side only."
       ],
       "required_evidence": [
         "product_review_summary evidence for received-product mismatch or actual effect failure",
@@ -263,6 +273,8 @@
     "All conclusions, summaries, reasons, and evidence fields must be in Chinese. Only direct source quotes may remain in source language or English.",
     "Output video_content_summary_cn and product_merchant_summary_cn in Chinese.",
     "Sexualized hook or adult innuendo maps to tagsContent 其他问题.",
+    "Off-topic or IP-bait content maps to tagsContent 其他问题; do not map it to 货不对板 unless the video actually demonstrates another physical product as the sold item.",
+    "Do not infer 图文AIGC, 无问题AIGC, or 非AIGC. Only output 视频不可见 in tagsAttribute when video frames are missing or unusable unless an explicit upstream AIGC attribute field is provided.",
     "IPR/counterfeit should focus on major international brand or famous IP; small or unknown brand mismatch is not enough.",
     "Product-side hit requires product_review_summary to be overall negative or say half or more users report the same concrete issue."
   ],
@@ -299,7 +311,9 @@
       "If frame_list is empty or no usable video frame is available, include 视频不可见 in tagsAttribute and do not infer visual video issues from missing frames.",
       "All conclusions, summaries, reasons, and evidence fields must be in Chinese. Only direct source quotes may remain in source language or English.",
       "Use exact Chinese label strings only.",
-      "Sexualized hook or spend the night with me style adult innuendo maps to tagsContent 其他问题."
+      "Sexualized hook or spend the night with me style adult innuendo maps to tagsContent 其他问题.",
+      "Off-topic or IP-bait content maps to tagsContent 其他问题; do not map it to 货不对板 unless the video actually demonstrates another physical product as the sold item.",
+      "Do not infer 图文AIGC, 无问题AIGC, or 非AIGC. Only output 视频不可见 in tagsAttribute when video frames are missing or unusable unless an explicit upstream AIGC attribute field is provided."
     ]
   }
 }
