@@ -1,176 +1,91 @@
-Video Product Lowquality Rules v12
+Video Product Lowquality Rules v13
 
-Project scope
-Review one e-commerce short video, one bound product evidence package, and user feedback evidence. Output one video-level decision and separate evidence details for video content risk, product or merchant risk, and comment or review risk.
+This workflow is video-first. The final model judges only video low-quality signals.
 
-This project reviews all e-commerce videos uniformly. Do not create separate labels for AI-generated versus non-AI-generated videos. Synthetic, unrealistic, or impossible visuals are evidence types, not project labels.
+Allowed model evidence: frame_list, ASR, OCR, images, country.
+Display-only fields: url, product_id, seller_id_str, comments, product_review_summary.
+Do not use display-only fields as judgment evidence.
 
-Human review label alignment
-The final JSON must include human_review_labels with ratings, tagsContent, tagsProduct, and tagsAttribute.
-human_review_labels is multi-select. select all applicable tags, not only primary_issue_type.
-Allowed ratings values: ok, video, product.
-Allowed tagsContent values: 货不对板, 夸大宣传, 穿帮/不符现实, 种族对立/假警察, 摆拍量产/营销叫卖, 其他问题.
-Allowed tagsProduct values: IPR侵权/假货, 商品质量差, 货不对板/夸大宣传, 售后服务问题, 物流问题.
-Allowed tagsAttribute values: 图文AIGC, 无问题AIGC, 非AIGC, 视频不可见.
-If frame_list is empty or no usable video frame is available, include 视频不可见 in tagsAttribute. Do not infer visual video issues from missing frames.
-Do not infer 图文AIGC, 无问题AIGC, or 非AIGC. Only output 视频不可见 in tagsAttribute when video frames are missing or unusable unless an explicit upstream AIGC attribute field is provided.
-Set ratings to include video when tagsContent is non-empty and product when tagsProduct is non-empty.
-Set ratings to include ok when no content or product issue tag is selected and the available evidence supports a clean judgment. If an explicit upstream attribute field says 图文AIGC or 视频不可见 with no content or product issue, keep tagsContent and tagsProduct empty and do not force a video/product rating.
-All conclusions, summaries, reasons, and evidence fields must be in Chinese. Only direct source quotes may remain in source language or English.
+Allowed final decisions: problematic, clean.
+Forbidden final decision: manual_review.
+Forbidden output: tagsProduct.
 
-Evidence channels
-Video content evidence: video frames from frame_list, ASR, OCR, and video URL.
-Product and merchant evidence: product_id, seller_id_str, country, and product reference images from images.
-Comment and review evidence: comments, CCR tags, comment text, and product_review_summary.
-Frame sampling contract: frame_list contains up to 8 video frames uniformly sampled across the full video duration in chronological order. Adjacent video frames mean neighboring sampled frames in frame_list, not frames one second apart. Do not claim exact elapsed time between frames unless explicit timestamps are provided.
+Frame sampling contract
+frame_list contains up to 8 video frames uniformly sampled across the full video duration in chronological order.
+Adjacent video frames mean neighboring sampled frames in frame_list, not frames one second apart.
+Do not claim exact elapsed time between frames unless explicit timestamps are provided.
 
-Final decisions
-problematic: strong evidence shows a real video, product, merchant, or feedback risk.
-clean: available video, product, merchant, comment, and review evidence do not show meaningful risk.
-The model must choose either problematic or clean. Do not output any third decision value. The result is used for statistics first, then humans will audit and correct it.
-When evidence is incomplete, choose the best binary judgment from available evidence: output problematic only when concrete available evidence supports a rule hit, otherwise output clean with the relevant data-quality or attribute explanation.
+Human review output
+The final JSON must include human_review_labels with ratings, tagsContent, and tagsAttribute. human_review_labels is multi-select; select all applicable labels, not only primary_issue_type.
+ratings must be [video] when tagsContent is non-empty.
+ratings must be [ok] when tagsContent is empty.
+Do not output tagsProduct.
+Only output 视频不可见 in tagsAttribute when video frames are missing or unusable.
 
-Primary issue types
-video_product_mismatch
-video_exaggerated_promotion
-video_unrealistic_or_continuity_error
-race_conflict_or_fake_police
-other_content_issue
-staged_mass_production_or_pure_marketing
-ipr_or_counterfeit
-poor_product_quality
-product_side_mismatch_or_exaggeration
-none
+Rule V1: video_product_mismatch / 挂车商品与讲解商品不一致
+Hit when video frames or ASR/OCR clearly promote or explain a main product that conflicts with product images in core category, function, form, visible quantity, key specification, size, dimension, or promised use. Same product style does not clear a material size or dimension contradiction.
+Do not hit for color-only differences, minor style/material/texture differences, lighting, angle, packaging language, ordinary brand-text differences, or a brief prop/background item.
+Do not hit merely because the video shows more units than one product image when the sold set can include those units.
 
-Rule V1: video_product_mismatch
-Hit when video frames show a physical product being promoted or demonstrated, and the shown product does not match the bound product reference images.
-Compare against all product reference images, not only the first image.
-If the shown product matches any product reference image in same style/type and there is no material contradiction in size, dimensions, capacity, count, or scale, do not hit mismatch for that product.
-Use product image visual features such as type, shape, structure, material appearance, packaging, size labels, dimensions, visible scale, and core design.
-Same product style or same product type is not enough to clear mismatch when the video materially changes the promised size, dimensions, capacity, count, or scale.
-Hit video_product_mismatch when product reference images or visible product-page text say one dimension or size variant, but video frames make the promoted item appear to be a materially larger or smaller variant.
-Example: product reference image says the cat house is 40 x 40 x 34 cm / 34 cm high, while the video frame presents the cat house as a much taller large cylinder relative to the adult presenter or pet; this is size/scale货不对板 even if the color, shape, opening, scratching panel, and hanging ball match.
-If a numeric size, width, height, capacity, count, or package quantity is visible or stated, compare it against the actual promoted use segment. Hit video_product_mismatch when the video makes the product materially exceed or fall below that explicit promise.
-When this kind of visible size/scale contradiction is clear, output problematic with primary_issue_type=video_product_mismatch.
-Do not use metadata alone to prove visual consistency.
-Ignore lighting, minor color shade, angle, render-versus-camera style, packaging language, brand OCR text, decorative props, and ordinary apparel wearing-style differences.
-Do not hit video_product_mismatch solely because one reference image among multiple variant images shows a different color, pattern, print, or variant, unless the video is clearly promoting a different physical product than the sold item.
-Do not hit video_product_mismatch from an opening, transition, or lifestyle scene that briefly shows another outfit, prop, or background item, unless that different item is presented as the product being sold.
-If no physical product appears in video frames, do not hit video_product_mismatch from ASR/OCR alone.
-If the video's main body is off-topic or IP-bait content that is not a product demonstration, map it to other_content_issue / tagsContent 其他问题; do not map it to 货不对板 unless the video actually demonstrates a different physical product as the sold item.
+Rule V2: misleading_functionality_or_effect / 功能效果虚假夸大
+Hit when frame_list, ASR, or OCR makes a concrete misleading claim about efficacy, speed, durability, medical or health effect, quantity, time, before/after result, safety, or physical capability.
+Do not hit from product images alone.
+Do not hit for ordinary advertising tone, subjective praise, metaphor, fashion or fit claims without concrete false promise, expected cleaning/shaving/styling/cooking outcomes, or minor numerical ambiguity that can be ordinary speech error.
 
-Rule V2: video_exaggerated_promotion
-Hit when video frames, ASR, or OCR present product function, effect, size, quality, capacity, speed, result, or use scenario in a way that materially overstates what the product can reasonably do.
-Examples include impossible before/after effects, unrealistic instant results, exaggerated capacity, toy or small product producing full-size effects, small device shown with professional-level power, and visual abundance far beyond the sold unit.
-When the video demonstrates unusually strong capability, fit, sealing, durability, stretch, or broad compatibility, and product_review_summary or clustered comments say the real product is too small, too thin, tears easily, does not fit, or is misleading compared to promotional videos, the primary issue should be primary_issue_type=video_exaggerated_promotion. Keep poor_product_quality and product_side_mismatch_or_exaggeration as secondary product-side hits when supported.
-Example: a stretch food cover video shows strong sealing and broad fit over watermelon, trays, bowls, and containers, while reviews say the covers are too small/thin, tear easily, and do not match promotional videos. This is content-side exaggerated promotion as the main issue, plus product quality / product-side mismatch as supporting product issues.
-Reserve strong hits for concrete evidence. Weak marketing praise alone is not enough.
-Do not hit video_exaggerated_promotion only because product_review_summary contains some, several, a few, or minor complaints while the overall feedback is positive or mixed-positive.
-Generic fashion, lifestyle, or comfort claims such as comfortable, high quality, luxury, warm, flattering, lightweight, robust, perfect fit, or good value are not enough by themselves.
-To hit video_exaggerated_promotion from review contradiction, require a concrete video or ASR/OCR claim about measurable performance, safety, quantity, size, waterproofing, durability, speed, capacity, or physical effect, plus direct dominant or repeated evidence that the claim fails.
-If the video itself shows a physically impossible demonstration, impossible transformation, or impossible result, use video_exaggerated_promotion together with video_unrealistic_or_continuity_error when both tags are supported.
+Rule V3: suspected_pirated_or_reused_content / 疑似盗版 / 疑似盗剪
+Hit when the video strongly suggests reused or pirated content, such as Chinese domestic studio recording cues, Chinese UI/environment not fitting the target market, blurry reposted footage, watermark-hiding layout, or obvious unrelated creator/content reuse.
+Do not hit for replying to a user comment, showing another creator briefly and then self-verifying, proof-style self-comparison, or the same creator appearing in different scenes.
 
-Rule V3: video_unrealistic_or_continuity_error
-Hit when video frames show physical impossibility, continuity error, product identity drift, structure drift, pattern drift, content identity drift, impossible scale or pose change, impossible emitted smoke/mist/fire/light, or a scene that would mislead consumers about the real product.
-For every video with usable frames, perform an adjacent-sampled-frame consistency check before clearing V3. Track the same product, body part, apparel side, prop, container, lid, tool, mounted item, and visible product effect across neighboring sampled frames.
-For process videos, compare input and output within the same segment. Do not compare unrelated montage segments.
-For foldable, telescopic, adjustable, or assembled household products, check whether hinges, support bars, crossbars, feet, panels, and side frames can physically move between adjacent frames as shown. If the frame expands, collapses, or changes geometry in a way the reference product cannot support, the main issue should be primary_issue_type=video_unrealistic_or_continuity_error.
-Check hand interaction and object contact. If a hand appears to hold multiple objects with an impossible grip, floats through the product, changes contact points inconsistently, or the product responds without plausible force/support, treat it as a continuity or physical-reality error when it affects product understanding.
-For apparel, shoes, socks, bags, shelves, bathroom organizers, tools, decor, and similar products, hit when the product orientation or state changes without a plausible visible action: a sock or garment flips front/back, a bag or lid opens by itself, an added object appears in the middle of the scene, a product floats or moves automatically, limbs or body parts vanish, an item is suddenly mounted or placed without an action, or the product deforms in a way its structure cannot support.
-For transparent storage boxes, shoe cabinets, organizers, drawers, or containers, check object materialization and drawer contents across adjacent sampled frames. If a box appears suddenly, shoes appear inside a drawer without a visible placement action, drawer contents change between neighboring sampled frames, or a temporary white box flashes and is then replaced by shoes, the main issue should be primary_issue_type=video_unrealistic_or_continuity_error.
-For cleaning, spray, steam, vacuum, wiping, cutting, grinding, drilling, repair, or stain-removal videos, obvious impossible output such as dirt being crushed or emitted instead of removed, the tool floating or standing unsupported, cleaning parts disappearing, abnormal sparks or fire behavior, or an undersized device producing physically implausible sustained steam/water/suction should be treated as a continuity or physical-reality error.
-Do not dismiss object materialization as normal editing when the frames are consecutive product-use steps and the change affects the claimed storage or organization function.
-When object materialization or drawer contents continuity errors are visible, this is higher-priority evidence than layer-count mismatch. Layer-count mismatch from perspective, cropping, or counting uncertainty is lower-confidence and should not be the primary issue if adjacent-frame object materialization is present.
-Do not use smooth drawer opening/closing or normal hand motion to deny object materialization. The required check is the state of the same compartment across adjacent sampled frames, such as empty -> white box -> shoes or empty -> shoes without a visible placement action.
-Example: a foldable microwave shelf reference image shows a 45 cm high frame with fixed side supports, hooks, panels, and telescopic width, but video frames show the side frame and support bars stretching or changing geometry unrealistically around a large oven, or a hand carrying several spice jars with an impossible grip. This is content-side 穿帮/不符现实 even if the product style matches the reference image.
-Example: a transparent shoe storage video shows an empty or partly empty compartment in one sampled frame, a white box flashes into the same compartment in a later sampled frame, and shoes appear in the next sampled frame without a plausible hand placement. This is object materialization / drawer contents continuity error.
-Example: a bag or storage product changes from closed to open without any visible hand action, or an organizer/shelf item slides or relocates by itself between adjacent sampled frames. This is video_unrealistic_or_continuity_error.
-Example: an apparel try-on video shows limbs, arms, legs, or body parts disappearing, or a sock/garment repeatedly switching front/back orientation without a dressing action. This is video_unrealistic_or_continuity_error.
-For food and packaged goods, prioritize sold SKU contradictions such as form, wrapper, count, or visible quantity mismatch.
-An AI-generated watermark, synthetic style, or CGI-looking frame is not enough by itself. Require a concrete unrealistic claim, impossible visual mechanism, impossible object motion, product continuity break, or misleading demonstration.
-Do not over-focus on noisy OCR, minor hand artifacts, or ordinary cooking/color changes when the product remains consistent.
-Normal baking, cooking expansion, melting, bubbling, browning, color change, or similar expected physical transformation is not V3 unless the transformation is impossible for the shown product/process.
+Rule V4: pure_marketing_pitch / 仅营销叫卖
+Hit only when nearly all ASR/OCR is price, urgency, stock, discount, order guidance, or sales pressure, with almost no product function, material, size, use scenario, operation method, or realistic product information.
+Weak but real product information should usually prevent this hit.
 
-Rule V4: race_conflict_or_fake_police
-Hit when the video uses racial conflict, ethnic hostility, fake police, fake law-enforcement authority, staged enforcement, or other high-conflict social/political identity framing to promote or dramatize the product.
-General uniforms, public service imagery, or ordinary safety scenes are not enough unless the content implies false authority, intimidation, conflict, or discriminatory framing.
+Rule V5: no_physical_product_display / 无实物展示（围绕商品讲解）
+Hit when the video talks about or promotes the product but does not show the physical product or a substantive product-use scene.
+AI-generated style does not equal no physical product display.
+Do not hit if the sampled frames clearly show the bound product or a substantive use scene.
 
-Rule V4B: other_content_issue
-Use tagsContent 其他问题 for sexualized hook, sexual implication, vulgar dating reward, or adult innuendo that is used as the video hook or promotion frame.
-Example: ASR says the winner can spend the night with me, get a night with a woman, or similar sexualized reward language. This should add tagsContent 其他问题 even when the main issue is also 夸大宣传 or 穿帮/不符现实.
-Use tagsContent 其他问题 for off-topic or IP-bait content when the video main body is movie-like scenes, celebrity or character/IP scenes, animals, landscape, political/social events, road construction, unrelated sports or entertainment clips, and the bound product is only attached at the end or not substantively demonstrated.
-Off-topic or IP-bait content maps to tagsContent 其他问题; do not map it to 货不对板 unless the video actually demonstrates another physical product as the sold item.
-Use tagsContent 其他问题 for a pure static product image slideshow or near-static image display with no substantive product demonstration when the review task treats that as low-quality content.
-Do not use tagsContent 其他问题 for normal apparel try-on, ordinary body-fit display, swimsuit/underwear product display, or a model pose unless the primary hook is explicitly sexualized or adult.
-Do not use tagsContent 其他问题 for a third-party brand or logo that appears only as styling, background, or a co-displayed outfit when the bound product is still substantively demonstrated.
+Rule V6: irrelevant_product_promotion / 内容与商品无关推广
+Hit when most of the video body is unrelated to the bound product, and the product appears only briefly, at the end, or not substantively.
+Do not hit merely because the opening has setup or a short unrelated segment.
+Do not hit if a later segment provides real product demonstration or explanation.
 
-Rule V5: staged_mass_production_or_pure_marketing
-Hit when ASR/OCR is mainly sales pressure, price, urgency, discount, buying guidance, or repetitive marketing, while providing no substantive product information.
-Use this tag only when about 90% or more of ASR/OCR is sales pressure, price, stock, discount, urgency, or buying guidance.
-Substantive product information includes function, material, size, capacity, ingredients, usage, compatibility, use scenario, operation method, or realistic performance explanation.
-Do not hit this rule when the video has weak but real product information. Weak detail may support another concrete rule, but is not automatically pure marketing.
+Rule V7: unrealistic_or_continuity_error / 穿帮 / 不符现实
+This label is lower priority than IPP, MFE, suspected pirated/reused content, no-product display, and pure marketing because the workflow only receives up to 8 sampled frames.
+Hit only when strong visual evidence affects consumer understanding of the product and cannot reasonably be explained by sampling interval, normal editing, camera angle, or missing intermediate action.
+Do not hit for ordinary action jumps between sampled frames, missing intermediate actions alone, slight hand artifacts, lighting or angle changes, motion blur, or process-video cuts that do not affect product understanding.
+If uncertain, choose clean.
 
-Rule P1: ipr_or_counterfeit
-Hit when product images, video frames, or feedback show fake, counterfeit, unauthorized brand/IP use, copied character/team/logo, or brand impersonation.
-Hit when the sold product itself visibly carries a major brand, famous IP, team, character, or logo/name and no authorization evidence is provided.
-IPR/counterfeit should focus on major international brand, famous character/team/logo, luxury brand, or clearly protected IP. Small or unknown brand mismatch, random shop brand, generic lookalike, or weak design similarity is not enough.
-Do not mark IPR for small or unknown brand name differences such as ordinary fan brand mismatch unless a major international brand or famous IP is clearly involved.
-Do not mark IPR only because a product vaguely resembles a well-known design; require clear logo/brand/character/team signal or strong trade-dress similarity to a major international brand.
-Use visual brand/IP signals plus comment/review evidence. Do not rely on title or category alone.
-Product Risk Gate does not block ipr_or_counterfeit when the sold product itself has direct visible major-brand or famous-IP evidence.
-Do not mark direct problematic IPR when the only signal is a background prop, styling accessory, decor item, unrelated book, generic design similarity, or third-party clothing that is not the sold product.
-Strong fake/counterfeit evidence should be problematic. Weak or uncertain suspicion should be clean unless the available evidence independently proves the sold product is risky.
+Rule V8: sexual_or_vulgar_hook / 擦边低俗
+Hit when the video uses a clear sexualized hook, vulgar, adult, dating, or sexual reward hook for promotion, including phrases such as spend the night with me.
+Do not hit ordinary try-on, gym, swimwear, shapewear, or body-fit display without clear vulgar/adult framing.
 
-Rule P2: poor_product_quality
-Hit when comment/review evidence or visuals show poor durability, poor material, broken item, dirty/leaking product, safety concern, bad workmanship, or repeated concrete quality complaints.
-product_review_summary is the primary product-side evidence for this rule.
-Product quality evaluation is fully decoupled from video comments.
-Only product_review_summary can create or upgrade poor_product_quality.
-Ignore video comments for poor_product_quality, even when the comments contain ProductIssue CCR tags, unless the same defect is also supported by product_review_summary.
-For product-side hit, product_review_summary should be overall negative, or say half or more users report the same concrete product issue. If overall sentiment is positive and only a minority reports mixed efficacy, side effects, smell, or no noticeable benefit, do not mark product-side hit.
-If product_review_summary is positive-dominant with only some, several, a few, or minor complaints, output no product-side hit. Keep the issue on the video side unless the summary says negative feedback is dominant, many users report the same concrete defect, significant complaints dominate, or no positive product feedback is present.
-Clustered product_review_summary evidence is high-weight because many product quality problems are not visible from product images or video frames.
-Do not mark product-side hit from video comments that mainly say not like the video, AI, fake ad, over-edited, or misleading video. Those comments support video-side exaggerated promotion unless they also describe received-product defects.
-Do not mark product-side hit when product_review_summary is clearly positive or neutral and the only negative evidence is video-comment dissatisfaction about the promotional video.
-For supplements, cosmetics, food, and similar efficacy products, product_review_summary mentioning side effects, diarrhea, unpleasant smell, no noticeable benefit, persistent symptoms, or does not help can support poor_product_quality or product_side_mismatch_or_exaggeration.
-Single vague dissatisfaction is not enough by itself.
+Rule V9: disgusting_or_terrifying_visual / 恶心恐怖
+Hit when the visual subject creates strong discomfort, dense-phobia-like reaction, injury, dirt, bodily, or horror-style effect.
+Do not hit for mildly unattractive visuals or normal product demonstration.
 
-Rule P3: product_side_mismatch_or_exaggeration
-Hit when comments, reviews, product images, or video evidence indicate received product does not match the video/product promise, the effect does not work, size/material differs, or promotion is materially misleading.
-product_review_summary is the primary product-side evidence for this rule.
-Product-side evaluation is fully decoupled from video comments.
-Only product_review_summary can create or upgrade tagsProduct for 货不对板/夸大宣传, except for direct visual IPR/counterfeit evidence.
-Use product_review_summary clusters such as not as described, wrong item, poor effect, perceived scam, refund/return problem, or mismatch complaints.
-For product-side hit, product_review_summary should be overall negative, or say half or more users report the same concrete mismatch, poor effect, or failure. If overall sentiment is positive and only a minority reports mixed efficacy, do not mark product-side hit.
-If product_review_summary is positive-dominant with only some, several, a few, or minor complaints, output no product-side hit. Do not turn minor product limitations into tagsProduct when human review would keep the case as content-side only.
-Do not mark product-side hit from product image advertising claims alone, such as before/after panels, percentage claims, cooling-temperature claims, sterilization claims, or other product-page marketing text. If those claims make the video misleading, treat them as video-side exaggerated promotion unless product_review_summary or received-product comments confirm real product-side failure.
-Do not mark product-side hit from comments that only say not like the video, does not work like the video, AI video, fake video, or over-edited video. These are primarily video-side exaggerated promotion signals.
-Do not mark product-side hit when product_review_summary says the product is effective, well received, or has no significant weakness, unless there is independent strong evidence of counterfeit/IPR, safety, received wrong item, severe defect, or repeated concrete received-product failure.
+Rule V10: pirated_content / 盗版内容
+Hit when the video uses clearly pirated copyrighted video content as the main promotional body.
+Do not hit merely for reference clips, reply/comment context, or same-creator multi-scene editing when product demonstration remains original.
 
-Comment and review weighting
-CCR tags are structured evidence. Use them with comment text and product_review_summary.
-ProductIssue--ProductQuality in video comments does not by itself map to poor_product_quality.
-ProductIssue--ProductUserPerceptionProblem in video comments does not by itself map to product_side_mismatch_or_exaggeration.
-MisleadingPromotionIssue maps to video_exaggerated_promotion by default.
-However, MisleadingPromotionIssue comments about the video not matching reality should first support video-side exaggerated promotion. They should not become product-side hits unless product_review_summary or concrete received-product comments support the same product-side failure.
-ContentIssue or Monitoring tags about ArtificialIntelligenceGeneratedContent map to ai_or_unrealistic_video signal.
-ProductIssue--PriceComplain maps to price_or_value_complaint and should not by itself become poor quality.
-PlatformIssue maps to platform issue only and should not by itself become product risk.
+Rule V11: description_not_detailed / 内容介绍不详细（低质）
+Hit when the video fails to provide meaningful product information for categories where function or usage explanation is required, such as supplements, health products, electronics, tools, or appliances.
+Do not hit for apparel, simple goods, or visual products when the product is clearly shown.
+Do not hit when visual demonstration itself provides enough product information.
 
-Data availability
-If frame_list is empty, do not make video-frame visual claims.
-If images is empty or invalid, do not make product-image comparison claims.
-If ASR and OCR are empty, do not hit pure marketing from missing text.
-If comments are empty or only placeholders, do not claim clustered user feedback.
-If key visual evidence is missing but comments/reviews are high risk, choose problematic only when non-visual evidence independently satisfies a rule; otherwise choose clean and explain that video evidence is unavailable.
-If frame_list is empty and video_url is missing or unusable, output tagsAttribute containing 视频不可见. Keep overall_decision=clean unless concrete non-visual evidence proves a product, merchant, or feedback risk.
+Rule V12: out_of_app_transaction / 站外引流交易
+Hit when the video clearly instructs users to transact or contact outside the platform using an external website, QR code, off-platform channel, or external transaction instruction.
+Do not hit TikTok in-app purchase guidance.
+Do not hit private-message requests by themselves.
+
+Rule V13: still_frame / 静止帧
+Hit when sampled frames are effectively static and provide no substantive product demonstration.
+Do not hit when frames show camera movement, angle shift, lighting shift, pose shift, product movement, or meaningful product display.
 
 Output requirements
 Return raw JSON only in the project schema.
 overall_decision must be either problematic or clean.
-Use Chinese summary and reasons for human review.
-Output video_content_summary_cn and product_merchant_summary_cn in Chinese.
-Output human_review_labels using the exact Chinese labels listed above.
-Every hit or uncertain result must include concrete evidence.
-Explain whether comment/review evidence changed the final decision.
-Do not infer 图文AIGC, 无问题AIGC, or 非AIGC. Only output 视频不可见 in tagsAttribute when video frames are missing or unusable unless an explicit upstream AIGC attribute field is provided.
+primary_issue_type must be one of the v13 issue types or none.
+All summaries and reasons must be in Chinese.
+Every problematic result must cite concrete evidence from frame_list, ASR, OCR, images, or country.
+If evidence is weak, ambiguous, incomplete, or only suspicious, choose clean and explain the boundary.

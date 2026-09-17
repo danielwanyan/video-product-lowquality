@@ -1,342 +1,294 @@
 {
-  "version": "2026-09-16-v12-binary-decision-calibration",
+  "version": "2026-09-17-v13-video-first-binary-boundary-calibration",
   "project": "Video_product_lowquality",
-  "scope": "Review one e-commerce short video using video content evidence, product/merchant evidence, and comment/review evidence. Do not split labels by AI-generated versus non-AI-generated.",
+  "scope": "Review one e-commerce short video for video low-quality signals. Product images and country are auxiliary evidence only.",
+  "decision_values": [
+    "problematic",
+    "clean"
+  ],
+  "evidence_contract": {
+    "judgment_evidence": [
+      "frame_list",
+      "ASR",
+      "OCR",
+      "images",
+      "country"
+    ],
+    "display_only": [
+      "url",
+      "product_id",
+      "seller_id_str",
+      "comments",
+      "product_review_summary"
+    ],
+    "notes": [
+      "Do not use display-only fields as judgment evidence.",
+      "Product images support IPP, IP, and MFE-style video judgment only.",
+      "Do not judge product quality or seller quality."
+    ]
+  },
   "frame_sampling_contract": {
     "frame_list_semantics": "frame_list contains up to 8 video frames uniformly sampled across the full video duration in chronological order.",
     "adjacent_frame_semantics": "Adjacent video frames mean neighboring sampled frames in frame_list, not frames one second apart.",
     "timestamp_boundary": "Do not claim exact elapsed time between frames unless explicit timestamps are provided."
   },
-  "decision_values": [
-    "problematic",
-    "clean"
-  ],
-  "decision_contract": {
-    "allowed_outputs": "overall_decision must be either problematic or clean. Do not output any third decision value.",
-    "statistics_alignment": "The model output is used for statistics first, then humans audit and correct it.",
-    "incomplete_evidence_handling": "When evidence is incomplete, choose the best binary judgment from available evidence: output problematic only when concrete available evidence supports a rule hit, otherwise output clean with the relevant data-quality or attribute explanation."
-  },
   "primary_issue_types": [
     "video_product_mismatch",
-    "video_exaggerated_promotion",
-    "video_unrealistic_or_continuity_error",
-    "race_conflict_or_fake_police",
-    "other_content_issue",
-    "staged_mass_production_or_pure_marketing",
-    "ipr_or_counterfeit",
-    "poor_product_quality",
-    "product_side_mismatch_or_exaggeration",
+    "misleading_functionality_or_effect",
+    "suspected_pirated_or_reused_content",
+    "pure_marketing_pitch",
+    "no_physical_product_display",
+    "irrelevant_product_promotion",
+    "unrealistic_or_continuity_error",
+    "sexual_or_vulgar_hook",
+    "disgusting_or_terrifying_visual",
+    "pirated_content",
+    "description_not_detailed",
+    "out_of_app_transaction",
+    "still_frame",
     "none"
   ],
-  "evidence_channels": {
-    "video_content": [
-      "frame_list",
-      "ASR",
-      "OCR",
-      "url"
-    ],
-    "product_merchant": [
-      "product_id",
-      "images",
-      "seller_id_str",
-      "country"
-    ],
-    "comment_review": [
-      "comments",
-      "product_review_summary"
-    ]
-  },
   "rules": [
     {
       "id": "V1",
       "issue_type": "video_product_mismatch",
-      "name": "Video product mismatch",
+      "label": "挂车商品与讲解商品不一致",
       "triggers": [
-        "Video frames show a physical product being promoted or demonstrated.",
-        "The shown product does not match any provided product reference image.",
-        "Mismatch concerns product type, structure, shape, material appearance, packaging, content, size label, dimensions, visible scale, capacity, count, or core design.",
-        "The product reference image or visible product-page text says one size/dimension variant, but video frames present a materially larger or smaller variant.",
-        "A numeric size, width, height, capacity, count, or package quantity is visible or stated, and the actual promoted use segment materially exceeds or falls below that explicit promise."
+        "Video frames or ASR/OCR clearly promote or explain a main product that conflicts with product images in core category, function, form, visible quantity, key specification, size, dimension, or promised use. Same product style does not clear a material size or dimension contradiction.",
+        "Product images visibly promise a product type, quantity, size, form, or function, and the video promotes a materially different product."
       ],
       "false_positive_boundaries": [
-        "A same product style/type match with any product reference image counts as visual consistency only for style/type claims; it does not clear a material size, dimension, capacity, count, or scale contradiction.",
-        "Do not use metadata alone to prove visual consistency.",
-        "Ignore lighting, minor color shade, angle, render-versus-camera style, packaging language, brand OCR text, props, and ordinary apparel wearing-style differences.",
-        "Do not hit video_product_mismatch solely because one reference image among multiple variant images shows a different color, pattern, print, or variant, unless the video is clearly promoting a different physical product than the sold item.",
-        "Do not hit video_product_mismatch from an opening, transition, or lifestyle scene that briefly shows another outfit, prop, or background item, unless that different item is presented as the product being sold.",
-        "If no physical product appears in video frames, do not hit mismatch from ASR/OCR alone.",
-        "If the video's main body is off-topic or IP-bait content that is not a product demonstration, map it to other_content_issue / tagsContent 其他问题; do not map it to 货不对板 unless the video actually demonstrates a different physical product as the sold item."
+        "Do not hit for color-only differences.",
+        "Do not hit for minor style, material, texture, lighting, angle, packaging language, or ordinary brand-text differences.",
+        "Do not hit merely because the video shows more units than one product image when the sold set can include those units.",
+        "Do not hit from opening scenes, props, outfits, or background objects unless that item is promoted as the sold product."
       ],
       "required_evidence": [
-        "video frame evidence",
-        "product reference image evidence",
-        "visible size or scale contradiction when size mismatch is the claim"
+        "video frame or ASR/OCR evidence of the promoted item",
+        "product image evidence for the bound product",
+        "specific core contradiction"
       ]
     },
     {
       "id": "V2",
-      "issue_type": "video_exaggerated_promotion",
-      "name": "Exaggerated product promotion",
+      "issue_type": "misleading_functionality_or_effect",
+      "label": "功能效果虚假夸大",
       "triggers": [
-        "Function, effect, size, quality, capacity, speed, result, or use scenario is materially overstated.",
-        "Video or ASR/OCR creates an unrealistic product expectation.",
-        "Visual abundance, performance, or before/after result exceeds what the sold product can reasonably support.",
-        "Video demonstrates unusually strong capability, fit, sealing, durability, stretch, or broad compatibility, while product_review_summary or clustered comments report the real product is too small, too thin, tears easily, does not fit, or is misleading compared to promotional videos."
+        "Video frames, ASR, or OCR make a concrete misleading claim about efficacy, speed, durability, medical or health effect, quantity, time, before/after result, safety, or physical capability.",
+        "The video demonstration visually implies a product effect that is physically impossible or materially misleading to consumers.",
+        "Product images may be used only as auxiliary evidence when a visible product promise directly conflicts with the video claim."
       ],
       "false_positive_boundaries": [
-        "Weak marketing praise alone is not enough.",
-        "Ordinary editing or positive tone is not enough without concrete misleading product implication.",
-        "Do not hit video_exaggerated_promotion only because product_review_summary contains some, several, a few, or minor complaints while the overall feedback is positive or mixed-positive.",
-        "Generic fashion, lifestyle, or comfort claims such as comfortable, high quality, luxury, warm, flattering, lightweight, robust, perfect fit, or good value are not enough by themselves.",
-        "To hit video_exaggerated_promotion from review contradiction, require a concrete video or ASR/OCR claim about measurable performance, safety, quantity, size, waterproofing, durability, speed, capacity, or physical effect, plus direct dominant or repeated evidence that the claim fails.",
-        "If the video itself shows a physically impossible demonstration, impossible transformation, or impossible result, use video_exaggerated_promotion together with video_unrealistic_or_continuity_error when both tags are supported.",
-        "If the conflict is between the advertised video use-case and real customer experience, use primary_issue_type=video_exaggerated_promotion as the main issue; keep poor_product_quality and product_side_mismatch_or_exaggeration as secondary product-side hits when supported."
+        "Do not hit from product images alone.",
+        "Do not hit for ordinary advertising tone, subjective praise, metaphor, fashion or fit claims without concrete false promise, or expected cleaning, shaving, styling, cooking, or demonstration outcomes.",
+        "Minor numerical ambiguity that can reasonably be ordinary speech error is not enough."
       ],
       "required_evidence": [
-        "video frame evidence or ASR/OCR claim",
-        "connection to product expectation"
+        "specific frame, ASR, or OCR claim",
+        "explanation of why the claim is materially misleading"
       ]
     },
     {
       "id": "V3",
-      "issue_type": "video_unrealistic_or_continuity_error",
-      "name": "Unrealistic scene or continuity error",
+      "issue_type": "suspected_pirated_or_reused_content",
+      "label": "疑似盗版 / 疑似盗剪",
       "triggers": [
-        "Physical impossibility, continuity error, product identity drift, structure drift, pattern drift, content identity drift, impossible scale or pose change.",
-        "Impossible emitted smoke, mist, fire, light, or other visual effect.",
-        "For every video with usable frames, adjacent sampled frames show inconsistent state for the same product, body part, apparel side, prop, container, lid, tool, mounted item, or visible product effect.",
-        "Process input and output do not belong to the same segment or product identity.",
-        "For foldable, telescopic, adjustable, or assembled household products, hinges, support bars, crossbars, feet, panels, and side frames expand, collapse, or change geometry in a way the reference product cannot physically support.",
-        "Hand interaction or object contact is physically inconsistent, such as an impossible grip, floating contact, changing contact points, or product movement without plausible force/support.",
-        "For apparel, shoes, socks, bags, shelves, bathroom organizers, tools, decor, and similar products, the product orientation or state changes without a plausible visible action: a sock or garment flips front/back, a bag or lid opens by itself, an added object appears in the middle of the scene, a product floats or moves automatically, limbs or body parts vanish, an item is suddenly mounted or placed without an action, or the product deforms in a way its structure cannot support.",
-        "For transparent storage boxes, shoe cabinets, organizers, drawers, or containers, object materialization occurs: a box appears suddenly, shoes appear inside a drawer without a visible placement action, drawer contents change between adjacent sampled frames, or a temporary object flashes and is replaced by another item.",
-        "For cleaning, spray, steam, vacuum, wiping, cutting, grinding, drilling, repair, or stain-removal videos, obvious impossible output such as dirt being crushed or emitted instead of removed, the tool floating or standing unsupported, cleaning parts disappearing, abnormal sparks or fire behavior, or an undersized device producing physically implausible sustained steam/water/suction should be treated as a continuity or physical-reality error."
+        "The video strongly suggests reused or pirated content, such as Chinese domestic studio recording cues, Chinese UI or environment not fitting the target market, blurry reposted footage, watermark-hiding layout, or obvious unrelated creator/content reuse.",
+        "The video has a clear piracy or reposting pattern that affects authenticity of the e-commerce promotion."
       ],
       "false_positive_boundaries": [
-        "frame_list contains up to 8 video frames uniformly sampled across the full video duration in chronological order; adjacent frames are neighboring sampled frames, not frames one second apart.",
-        "Do not claim exact elapsed time between frames unless explicit timestamps are provided.",
-        "Do not over-focus on noisy OCR, minor hand artifacts, or ordinary cooking/color changes.",
-        "Normal baking, cooking expansion, melting, bubbling, browning, color change, or similar expected physical transformation is not V3 unless the transformation is impossible for the shown product/process.",
-        "For process videos, compare input and output within the same segment, not unrelated montage segments.",
-        "Do not dismiss object materialization as normal editing when frames are consecutive product-use steps and the change affects the claimed storage or organization function.",
-        "Object materialization and drawer contents continuity errors are higher-priority than layer-count mismatch; layer-count mismatch from perspective, cropping, or counting uncertainty is lower-confidence and should not be the primary issue when object materialization is present.",
-        "Do not use smooth drawer opening/closing or normal hand motion to deny object materialization; check the same compartment state across adjacent sampled frames, such as empty -> white box -> shoes or empty -> shoes without a visible placement action.",
-        "If the physically impossible foldable/telescopic movement or hand interaction affects product understanding, use primary_issue_type=video_unrealistic_or_continuity_error as the main issue even when the product style matches the reference image.",
-        "An AI-generated watermark, synthetic style, or CGI-looking frame is not enough by itself. Require a concrete unrealistic claim, impossible visual mechanism, impossible object motion, product continuity break, or misleading demonstration."
+        "Do not hit for replying to a user comment.",
+        "Do not hit for showing another creator briefly and then self-verifying the product.",
+        "Do not hit for proof-style self-comparison.",
+        "Do not hit only because the same creator appears in different scenes."
       ],
       "required_evidence": [
-        "specific video frame evidence"
+        "specific visual or textual piracy/reuse signal"
       ]
     },
     {
       "id": "V4",
-      "issue_type": "race_conflict_or_fake_police",
-      "name": "Race conflict or fake police",
+      "issue_type": "pure_marketing_pitch",
+      "label": "仅营销叫卖",
       "triggers": [
-        "Racial conflict, ethnic hostility, fake police, fake law-enforcement authority, staged enforcement, or high-conflict social/political identity framing is used for promotion or dramatization."
+        "Nearly all ASR/OCR is price, urgency, stock, discount, order guidance, or sales pressure.",
+        "The video contains almost no product function, material, size, use scenario, operation method, or realistic product information."
       ],
       "false_positive_boundaries": [
-        "General uniforms, public service imagery, or ordinary safety scenes are not enough without false authority, intimidation, conflict, or discriminatory framing."
+        "Weak but real product information should usually prevent this hit.",
+        "Do not hit when the video provides substantive product features or usage, even if it also contains buying guidance."
       ],
       "required_evidence": [
-        "video frame evidence or ASR/OCR evidence"
-      ]
-    },
-    {
-      "id": "V4B",
-      "issue_type": "other_content_issue",
-      "name": "Other content issue / sexualized hook / off-topic or IP-bait",
-      "triggers": [
-        "Sexualized hook, sexual implication, vulgar dating reward, or adult innuendo is used as the video hook or promotional framing.",
-        "ASR or OCR says the winner can spend the night with me, get a night with a woman, or similar sexualized reward language.",
-        "The video main body is off-topic or IP-bait material such as movie-like scenes, celebrity or character/IP scenes, animals, landscape, political/social events, road construction, unrelated sports or entertainment clips, while the bound product is only attached at the end or not substantively demonstrated.",
-        "The video is only a static product image slideshow or near-static image display with no substantive product demonstration, when the review task treats that as low-quality content."
-      ],
-      "false_positive_boundaries": [
-        "Do not use this for ordinary product attractiveness claims without sexualized or adult implication.",
-        "Do not use this for normal apparel try-on, ordinary body-fit display, swimsuit/underwear product display, or a model pose unless the primary hook is explicitly sexualized or adult.",
-        "This is a tagsContent=其他问题 signal, not a product-side issue.",
-        "Off-topic or IP-bait content maps to tagsContent 其他问题; do not map it to 货不对板 unless the video actually demonstrates another physical product as the sold item.",
-        "Do not use this for a third-party brand or logo that appears only as styling, background, or a co-displayed outfit when the bound product is still substantively demonstrated.",
-        "If the video clearly demonstrates a different physical product as the sold item, video_product_mismatch may still apply."
-      ],
-      "required_evidence": [
-        "ASR/OCR/video-frame evidence of sexualized hook, adult innuendo, off-topic or IP-bait content, or pure static-image display"
+        "ASR or OCR evidence showing near-total marketing pitch"
       ]
     },
     {
       "id": "V5",
-      "issue_type": "staged_mass_production_or_pure_marketing",
-      "name": "Staged mass production or pure marketing pitch",
+      "issue_type": "no_physical_product_display",
+      "label": "无实物展示（围绕商品讲解）",
       "triggers": [
-        "ASR/OCR is mainly sales pressure, price, urgency, discount, buying guidance, or repetitive marketing.",
-        "The video lacks substantive product information such as function, material, size, capacity, ingredients, usage, compatibility, scenario, operation method, or realistic performance explanation.",
-        "About 90% or more of ASR/OCR is sales pressure, price, stock, discount, urgency, or buying guidance."
+        "The video talks about or promotes the product but does not show the physical product or a substantive product-use scene."
       ],
       "false_positive_boundaries": [
-        "Weak but real product information prevents direct pure-marketing hit.",
-        "Missing ASR/OCR cannot support pure-marketing hit.",
-        "Do not hit this rule when the video gives substantive product information, even if the video also contains price or purchase guidance."
+        "AI-generated style does not equal no physical product display.",
+        "Do not hit if the sampled frames clearly show the bound product or a substantive use scene.",
+        "Do not hit only because product display is brief when it is clear and relevant."
       ],
       "required_evidence": [
-        "ASR/OCR evidence"
+        "video frame evidence that product is not shown"
       ]
     },
     {
-      "id": "P1",
-      "issue_type": "ipr_or_counterfeit",
-      "name": "IPR or counterfeit risk",
+      "id": "V6",
+      "issue_type": "irrelevant_product_promotion",
+      "label": "内容与商品无关推广",
       "triggers": [
-        "Visual brand/IP signal suggests fake, counterfeit, unauthorized brand/IP use, copied character/team/logo, or brand impersonation.",
-        "Comments or reviews repeatedly mention fake, counterfeit, not genuine, replica, or similar concerns.",
-        "Clear major international brand, famous character/team/logo, luxury brand, or protected IP signal is visible or repeatedly reported.",
-        "The sold product itself visibly carries a major brand, famous IP, team, character, or logo/name and no authorization evidence is provided."
+        "Most of the video body is unrelated to the bound product, and the product appears only briefly, at the end, or not substantively.",
+        "The video uses unrelated entertainment, celebrity, movie-like, animal, landscape, political, sports, or other non-product content as the main body."
       ],
       "false_positive_boundaries": [
-        "Do not rely on title or category alone.",
-        "Weak or uncertain suspicion should be clean unless the available evidence independently proves the sold product is risky.",
-        "IPR/counterfeit should focus on major international brand, famous character/team/logo, luxury brand, or clearly protected IP.",
-        "Small or unknown brand mismatch, random shop brand, generic lookalike, or weak design similarity is not enough.",
-        "Do not mark IPR only because a product vaguely resembles a well-known design; require clear logo/brand/character/team signal or strong trade-dress similarity to a major international brand.",
-        "Do not mark IPR for small or unknown brand name differences.",
-        "Product Risk Gate does not block ipr_or_counterfeit when the sold product itself has direct visible major-brand or famous-IP evidence.",
-        "Do not mark direct problematic IPR when the only signal is a background prop, styling accessory, decor item, unrelated book, generic design similarity, or third-party clothing that is not the sold product."
+        "Do not hit merely because the opening has setup or a short unrelated segment.",
+        "Do not hit if a later segment provides real product demonstration or explanation."
       ],
       "required_evidence": [
-        "visual brand/IP evidence or clustered comment/review evidence"
+        "video frame or ASR/OCR evidence of unrelated main content"
       ]
     },
     {
-      "id": "P2",
-      "issue_type": "poor_product_quality",
-      "name": "Poor product quality",
+      "id": "V7",
+      "issue_type": "unrealistic_or_continuity_error",
+      "label": "穿帮 / 不符现实",
+      "priority": "lower_than_ipp_mfe_piracy_no_product_and_pure_marketing",
       "triggers": [
-        "Comment/review evidence or visuals show poor durability, poor material, broken item, dirty/leaking product, safety concern, bad workmanship, or repeated concrete quality complaints.",
-        "product_review_summary reports repeated concrete product defects, side effects, durability problems, material problems, broken/leaking/safety issues, unpleasant smell, no noticeable benefit, persistent symptoms, diarrhea, or does not help."
+        "Strong visual evidence shows physically impossible product behavior, object materialization or disappearance, impossible structure deformation, impossible body or hand contact, or an impossible product effect.",
+        "The issue affects consumer understanding of the product.",
+        "The change cannot reasonably be explained by the sampling interval, normal editing, camera angle, or missing intermediate action."
       ],
       "false_positive_boundaries": [
-        "Single vague dissatisfaction is not enough by itself.",
-        "Price-only complaint is not quality evidence by itself.",
-        "product_review_summary is the primary product-side evidence for this rule.",
-        "Do not mark product-side hit from video comments that mainly say not like the video, AI, fake ad, over-edited, or misleading video; these comments support video-side exaggerated promotion unless they also describe received-product defects.",
-        "Do not mark product-side hit when product_review_summary is clearly positive or neutral and the only negative evidence is video-comment dissatisfaction about the promotional video.",
-        "Single vague dissatisfaction, price-only complaint, or product-page marketing copy is not enough by itself.",
-        "Product quality evaluation is fully decoupled from video comments.",
-        "Only product_review_summary can create or upgrade poor_product_quality.",
-        "Ignore video comments for poor_product_quality, even when the comments contain ProductIssue CCR tags, unless the same defect is also supported by product_review_summary.",
-        "For product-side hit, product_review_summary should be overall negative, or say half or more users report the same concrete issue.",
-        "If overall sentiment is positive and only a minority reports mixed efficacy, side effects, smell, or no noticeable benefit, do not mark product-side hit.",
-        "If product_review_summary is positive-dominant with only some, several, a few, or minor complaints, output no product-side hit. Keep the issue on the video side unless the summary says negative feedback is dominant, many users report the same concrete defect, significant complaints dominate, or no positive product feedback is present."
+        "This label is lower priority because the workflow only receives up to 8 sampled frames.",
+        "Do not hit for ordinary action jumps between sampled frames.",
+        "Do not hit for missing intermediate actions alone.",
+        "Do not hit for slight hand artifacts, lighting or angle changes, motion blur, or process-video cuts that do not affect product understanding.",
+        "If uncertain, choose clean."
       ],
       "required_evidence": [
-        "product_review_summary evidence for product quality problems",
-        "not video comments alone"
+        "specific sampled frame evidence",
+        "reason the issue cannot be explained by sparse sampling or normal editing"
       ]
     },
     {
-      "id": "P3",
-      "issue_type": "product_side_mismatch_or_exaggeration",
-      "name": "Product-side mismatch or exaggeration",
+      "id": "V8",
+      "issue_type": "sexual_or_vulgar_hook",
+      "label": "擦边低俗",
       "triggers": [
-        "Received product does not match the video/product promise.",
-        "The advertised effect does not work.",
-        "Size, material, quantity, packaging, or function differs from user expectation created by the video or product evidence.",
-        "Comments/reviews indicate not as described, wrong item, poor effect, perceived scam, or refund/return problem.",
-        "product_review_summary or concrete received-product comments indicate the received product, actual effect, material, size, quantity, or function differs from the product/video promise."
+        "The video uses a clear sexualized hook, vulgar, adult, dating, or sexual reward hook for promotion, including phrases such as spend the night with me."
       ],
       "false_positive_boundaries": [
-        "General preference complaints are not enough unless repeated and tied to core product promise.",
-        "product_review_summary is the primary product-side evidence for this rule.",
-        "Do not mark product-side hit from product image advertising claims alone, such as before/after panels, percentage claims, cooling-temperature claims, sterilization claims, or other product-page marketing text.",
-        "If product-page marketing claims make the video misleading, treat them as video-side exaggerated promotion unless product_review_summary or received-product comments confirm real product-side failure.",
-        "Do not mark product-side hit from comments that only say not like the video, does not work like the video, AI video, fake video, or over-edited video; these are primarily video-side exaggerated promotion signals.",
-        "Do not mark product-side hit when product_review_summary says the product is effective, well received, or has no significant weakness, unless there is independent strong evidence of counterfeit/IPR, safety, received wrong item, severe defect, or repeated concrete received-product failure.",
-        "Product-side evaluation is fully decoupled from video comments.",
-        "Only product_review_summary can create or upgrade tagsProduct for 货不对板/夸大宣传, except for direct visual IPR/counterfeit evidence.",
-        "Do not use video comments alone for product_side_mismatch_or_exaggeration.",
-        "For product-side hit, product_review_summary should be overall negative, or say half or more users report the same concrete issue.",
-        "If overall sentiment is positive and only a minority reports mixed efficacy, side effects, smell, or no noticeable benefit, do not mark product-side hit.",
-        "If product_review_summary is positive-dominant with only some, several, a few, or minor complaints, output no product-side hit. Do not turn minor product limitations into tagsProduct when human review would keep the case as content-side only."
+        "Do not hit ordinary try-on, gym, swimwear, shapewear, or body-fit display without clear vulgar/adult framing."
       ],
       "required_evidence": [
-        "product_review_summary evidence for received-product mismatch or actual effect failure",
-        "not video comments alone"
+        "video frame, ASR, or OCR evidence of vulgar or adult framing"
+      ]
+    },
+    {
+      "id": "V9",
+      "issue_type": "disgusting_or_terrifying_visual",
+      "label": "恶心恐怖",
+      "triggers": [
+        "The visual subject creates strong discomfort, dense-phobia-like reaction, injury, dirt, bodily, or horror-style effect."
+      ],
+      "false_positive_boundaries": [
+        "Do not hit for mildly unattractive visuals or normal product demonstration."
+      ],
+      "required_evidence": [
+        "specific visual evidence"
+      ]
+    },
+    {
+      "id": "V10",
+      "issue_type": "pirated_content",
+      "label": "盗版内容",
+      "triggers": [
+        "The video uses clearly pirated copyrighted video content as the main promotional body."
+      ],
+      "false_positive_boundaries": [
+        "Do not hit merely for reference clips, reply/comment context, or same-creator multi-scene editing when product demonstration remains original."
+      ],
+      "required_evidence": [
+        "clear pirated content evidence"
+      ]
+    },
+    {
+      "id": "V11",
+      "issue_type": "description_not_detailed",
+      "label": "内容介绍不详细（低质）",
+      "triggers": [
+        "The video fails to provide meaningful product information for categories where function or usage explanation is required, such as supplements, health products, electronics, tools, or appliances."
+      ],
+      "false_positive_boundaries": [
+        "Do not hit for apparel, simple goods, or visual products when the product is clearly shown.",
+        "Do not hit when visual demonstration itself provides enough product information."
+      ],
+      "required_evidence": [
+        "category or video context showing explanation is required",
+        "absence of meaningful explanation in frames, ASR, and OCR"
+      ]
+    },
+    {
+      "id": "V12",
+      "issue_type": "out_of_app_transaction",
+      "label": "站外引流交易",
+      "triggers": [
+        "The video clearly instructs users to transact or contact outside the platform using an external website, QR code, off-platform channel, or external transaction instruction."
+      ],
+      "false_positive_boundaries": [
+        "Do not hit TikTok in-app purchase guidance.",
+        "Do not hit private-message requests by themselves."
+      ],
+      "required_evidence": [
+        "ASR, OCR, or frame evidence of external transaction path"
+      ]
+    },
+    {
+      "id": "V13",
+      "issue_type": "still_frame",
+      "label": "静止帧",
+      "triggers": [
+        "Sampled frames are effectively static and provide no substantive product demonstration."
+      ],
+      "false_positive_boundaries": [
+        "Do not hit when frames show camera movement, angle shift, lighting shift, pose shift, product movement, or meaningful product display."
+      ],
+      "required_evidence": [
+        "sampled frame comparison evidence"
       ]
     }
   ],
-  "comment_tag_mapping": {
-    "ProductIssue--ProductQuality--*": "video comments do not by themselves map to poor_product_quality; require product_review_summary support",
-    "ProductIssue--ProductUserPerceptionProblem--*": "video comments do not by themselves map to product_side_mismatch_or_exaggeration; require product_review_summary support",
-    "MisleadingPromotionIssue--*": "video_exaggerated_promotion by default; product-side hit requires product_review_summary support",
-    "ContentIssue--TopicalComplaints--ArtificialIntelligenceGeneratedContent": "attribute signal only; do not map to video_unrealistic_or_continuity_error without a concrete visual impossibility, continuity break, or misleading demonstration",
-    "Monitoring--SensitiveTopicDiscussion--ArtificialIntelligenceGeneratedContent": "attribute signal only; do not map to video_unrealistic_or_continuity_error without a concrete visual impossibility, continuity break, or misleading demonstration",
-    "ProductIssue--PriceComplain--*": "price_or_value_complaint",
-    "FulfillmentandLogisticsIssue--*": "seller_or_fulfillment_problem",
-    "PlatformIssue--*": "platform_issue_only"
+  "label_mapping": {
+    "video_product_mismatch": "挂车商品与讲解商品不一致",
+    "misleading_functionality_or_effect": "功能效果虚假夸大",
+    "suspected_pirated_or_reused_content": "疑似盗版 / 疑似盗剪",
+    "pure_marketing_pitch": "仅营销叫卖",
+    "no_physical_product_display": "无实物展示（围绕商品讲解）",
+    "irrelevant_product_promotion": "内容与商品无关推广",
+    "unrealistic_or_continuity_error": "穿帮 / 不符现实",
+    "sexual_or_vulgar_hook": "擦边低俗",
+    "disgusting_or_terrifying_visual": "恶心恐怖",
+    "pirated_content": "盗版内容",
+    "description_not_detailed": "内容介绍不详细（低质）",
+    "out_of_app_transaction": "站外引流交易",
+    "still_frame": "静止帧",
+    "none": ""
   },
-  "data_availability_rules": [
-    "If frame_list is empty, do not make video-frame visual claims.",
-    "If images is empty or invalid, do not make product-image comparison claims.",
-    "If ASR and OCR are empty, do not hit pure marketing from missing text.",
-    "If comments are empty or only placeholders, do not claim clustered user feedback.",
-    "If key visual evidence is missing but comments/reviews are high risk, choose problematic only when non-visual evidence independently satisfies a rule; otherwise choose clean and explain that video evidence is unavailable.",
-    "If frame_list is empty or no usable video frame is available, output tagsAttribute containing 视频不可见 and do not output tagsContent based on visual evidence.",
-    "If frame_list is empty and video_url is missing or unusable, keep overall_decision=clean unless concrete non-visual evidence proves a product, merchant, or feedback risk."
-  ],
-  "output_rules": [
-    "Return raw JSON only in the project schema.",
-    "overall_decision must be either problematic or clean.",
-    "Use Chinese summary and reasons for human review.",
-    "Every hit or uncertain result must include concrete evidence.",
-    "Explain whether comment/review evidence changed the final decision.",
-    "Return human_review_labels with exact Chinese tagsContent, tagsProduct, and tagsAttribute values.",
-    "human_review_labels is multi-select; select all applicable labels, not only primary_issue_type.",
-    "All conclusions, summaries, reasons, and evidence fields must be in Chinese. Only direct source quotes may remain in source language or English.",
-    "Output video_content_summary_cn and product_merchant_summary_cn in Chinese.",
-    "Sexualized hook or adult innuendo maps to tagsContent 其他问题.",
-    "Off-topic or IP-bait content maps to tagsContent 其他问题; do not map it to 货不对板 unless the video actually demonstrates another physical product as the sold item.",
-    "Do not infer 图文AIGC, 无问题AIGC, or 非AIGC. Only output 视频不可见 in tagsAttribute when video frames are missing or unusable unless an explicit upstream AIGC attribute field is provided.",
-    "IPR/counterfeit should focus on major international brand or famous IP; small or unknown brand mismatch is not enough.",
-    "Product-side hit requires product_review_summary to be overall negative or say half or more users report the same concrete issue."
-  ],
-  "human_review_labels": {
+  "output_contract": {
     "ratings": [
-      "ok",
       "video",
-      "product"
-    ],
-    "tagsContent": [
-      "货不对板",
-      "夸大宣传",
-      "穿帮/不符现实",
-      "种族对立/假警察",
-      "摆拍量产/营销叫卖",
-      "其他问题"
-    ],
-    "tagsProduct": [
-      "IPR侵权/假货",
-      "商品质量差",
-      "货不对板/夸大宣传",
-      "售后服务问题",
-      "物流问题"
+      "ok"
     ],
     "tagsAttribute": [
-      "图文AIGC",
-      "无问题AIGC",
-      "非AIGC",
       "视频不可见"
     ],
-    "mapping_rules": [
-      "human_review_labels is multi-select. select all applicable tags, not only primary_issue_type.",
-      "Set ratings to include video when tagsContent is non-empty.",
-      "Set ratings to include product when tagsProduct is non-empty.",
-      "Set ratings to include ok when no content or product issue tag is selected and available evidence supports a clean judgment.",
-      "If frame_list is empty or no usable video frame is available, include 视频不可见 in tagsAttribute and do not infer visual video issues from missing frames.",
-      "All conclusions, summaries, reasons, and evidence fields must be in Chinese. Only direct source quotes may remain in source language or English.",
-      "Use exact Chinese label strings only.",
-      "Sexualized hook or spend the night with me style adult innuendo maps to tagsContent 其他问题.",
-      "Off-topic or IP-bait content maps to tagsContent 其他问题; do not map it to 货不对板 unless the video actually demonstrates another physical product as the sold item.",
-      "Do not infer 图文AIGC, 无问题AIGC, or 非AIGC. Only output 视频不可见 in tagsAttribute when video frames are missing or unusable unless an explicit upstream AIGC attribute field is provided."
-    ]
+    "product_side_labels": "Do not output product-side labels.",
+    "uncertain_policy": "If evidence is weak, ambiguous, incomplete, or only suspicious, choose clean."
   }
 }
